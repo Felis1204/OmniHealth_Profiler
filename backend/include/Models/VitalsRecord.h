@@ -12,6 +12,7 @@ struct VitalsRecord : public HealthRecord {
     std::optional<double> sleepHours;  // 睡眠时长 (小时)
     std::optional<double> weightKg;    // 体重 (kg)
     std::optional<double> heightCm;    // 身高 (cm, 用于 BMI 计算)
+    std::optional<double> waistCm;     // 腰围 (cm, 用于代谢综合征/ASCVD 评估)
 };
 
 } // namespace health

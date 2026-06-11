@@ -32,11 +32,12 @@ static const std::vector<std::string>& getAllowedTables() {
 // ============================================================
 static const std::vector<std::string>& getTableColumns(const std::string& table) {
     static const std::vector<std::string> userProfileCols = {
-        "id", "name", "birth_date", "gender", "smoking_status", "created_at"
+        "id", "name", "birth_date", "gender", "smoking_status",
+        "region", "urban_rural", "family_history_ascvd", "has_diabetes", "created_at"
     };
     static const std::vector<std::string> vitalsCols = {
         "id", "user_id", "timestamp", "heart_rate", "steps", "sleep_hours",
-        "weight_kg", "height_cm", "source", "note"
+        "weight_kg", "height_cm", "waist_cm", "source", "note"
     };
     static const std::vector<std::string> labTestCols = {
         "id", "user_id", "timestamp", "fasting_glucose", "total_cholesterol",
@@ -100,6 +101,10 @@ bool DataAccessImpl::createSchema() {
             birth_date TEXT,
             gender TEXT,
             smoking_status TEXT,
+            region TEXT,
+            urban_rural TEXT,
+            family_history_ascvd INTEGER DEFAULT 0,
+            has_diabetes INTEGER DEFAULT 0,
             created_at TEXT DEFAULT (datetime('now'))
         );
 
@@ -112,6 +117,7 @@ bool DataAccessImpl::createSchema() {
             sleep_hours REAL,
             weight_kg REAL,
             height_cm REAL,
+            waist_cm REAL,
             source TEXT,
             note TEXT,
             FOREIGN KEY (user_id) REFERENCES user_profile(id)

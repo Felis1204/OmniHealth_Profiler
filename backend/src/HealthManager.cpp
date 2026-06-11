@@ -1,5 +1,6 @@
 #include "HealthManager.h"
 #include "DataAccess.h"
+#include "ASCVDCalculator.h"
 
 #include <algorithm>
 #include <chrono>
@@ -55,6 +56,7 @@ static json vitalsToJson(const VitalsRecord& r) {
     if (r.sleepHours) j["sleep_hours"] = *r.sleepHours;
     if (r.weightKg)   j["weight_kg"]   = *r.weightKg;
     if (r.heightCm)   j["height_cm"]   = *r.heightCm;
+    if (r.waistCm)    j["waist_cm"]    = *r.waistCm;
     if (r.source)     j["source"]      = *r.source;
     if (r.note)       j["note"]        = *r.note;
     return j;
@@ -114,6 +116,7 @@ static VitalsRecord jsonToVitals(const json& j) {
     setOptDouble("sleep_hours", r.sleepHours);
     setOptDouble("weight_kg",   r.weightKg);
     setOptDouble("height_cm",   r.heightCm);
+    setOptDouble("waist_cm",    r.waistCm);
     setOptStr   ("source",      r.source);
     setOptStr   ("note",        r.note);
     return r;
@@ -165,6 +168,71 @@ static BloodPressureRecord jsonToBp(const json& j) {
     setOptStr("source",    r.source);
     setOptStr("note",      r.note);
     return r;
+}
+
+// ============================================================
+// UserProfile 序列化
+// ============================================================
+
+static json userProfileToJson(const UserProfile& p) {
+    json j;
+    j["id"]   = p.id;
+    j["name"] = p.name;
+    if (p.birthDate)          j["birth_date"]          = *p.birthDate;
+    if (p.gender)             j["gender"]              = *p.gender;
+    if (p.smokingStatus)      j["smoking_status"]      = *p.smokingStatus;
+    if (p.region)             j["region"]              = *p.region;
+    if (p.urbanRural)         j["urban_rural"]         = *p.urbanRural;
+    if (p.familyHistoryASCVD) j["family_history_ascvd"] = *p.familyHistoryASCVD ? 1 : 0;
+    if (p.hasDiabetes)        j["has_diabetes"]        = *p.hasDiabetes ? 1 : 0;
+    return j;
+}
+
+static UserProfile jsonToUserProfile(const json& j) {
+    UserProfile p;
+    p.id   = j.value("id", "");
+    p.name = j.value("name", "");
+
+    auto setOptStr = [&](const char* key, std::optional<std::string>& dest) {
+        if (j.contains(key) && !j[key].is_null())
+            dest = j[key].get<std::string>();
+    };
+    auto setOptBool = [&](const char* key, std::optional<bool>& dest) {
+        if (j.contains(key) && !j[key].is_null())
+            dest = (j[key].get<int>() != 0);
+    };
+
+    setOptStr ("birth_date",           p.birthDate);
+    setOptStr ("gender",               p.gender);
+    setOptStr ("smoking_status",       p.smokingStatus);
+    setOptStr ("region",               p.region);
+    setOptStr ("urban_rural",          p.urbanRural);
+    setOptBool("family_history_ascvd", p.familyHistoryASCVD);
+    setOptBool("has_diabetes",         p.hasDiabetes);
+    return p;
+}
+
+// ============================================================
+// 年龄计算（身份证年龄：满周岁）
+// ============================================================
+
+static int calculateAge(const std::optional<std::string>& birthDate) {
+    if (!birthDate || birthDate->empty()) return 0;
+
+    std::tm tm = {};
+    std::istringstream ss(*birthDate);
+    ss >> std::get_time(&tm, "%Y-%m-%d");
+    if (ss.fail()) {
+        // 尝试仅年份格式
+        std::istringstream ss2(*birthDate);
+        ss2 >> std::get_time(&tm, "%Y");
+        if (ss2.fail()) return 0;
+    }
+
+    auto birthTime = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    auto now = std::chrono::system_clock::now();
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(now - birthTime).count();
+    return static_cast<int>(hours / (365.25 * 24.0));
 }
 
 // ============================================================
@@ -239,6 +307,9 @@ public:
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const override;
 
+    bool saveUserProfile(const UserProfile& profile) override;
+    std::optional<UserProfile> getUserProfile() const override;
+
     // ---- 风险计算 ----
     double calculateASCVDScore() const override;
     double calculateBMI() const override;
@@ -261,6 +332,9 @@ private:
         const std::string& selectCols,
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const;
+
+    /// @brief 获取最近 N 次收缩压均值（临床建议 2-3 次）
+    double getAverageSystolicBP(int count) const;
 };
 
 // ============================================================
@@ -368,6 +442,42 @@ std::vector<LabTestRecord> HealthManagerImpl::getLabTestRecords(
     return records;
 }
 
+bool HealthManagerImpl::saveUserProfile(const UserProfile& profile) {
+    std::cerr << "[Backend] saveUserProfile: id=" << profile.id << std::endl;
+    json j = userProfileToJson(profile);
+    return dataAccess_->insertRecord("user_profile", j.dump());
+}
+
+std::optional<UserProfile> HealthManagerImpl::getUserProfile() const {
+    std::string sql = "SELECT * FROM user_profile LIMIT 1";
+    std::string resultJson = dataAccess_->queryRecords(sql);
+    try {
+        json arr = json::parse(resultJson);
+        if (!arr.empty()) {
+            return jsonToUserProfile(arr[0]);
+        }
+    } catch (const json::parse_error& e) {
+        std::cerr << "[Backend] getUserProfile JSON 解析失败: " << e.what() << std::endl;
+    }
+    return std::nullopt;
+}
+
+double HealthManagerImpl::getAverageSystolicBP(int count) const {
+    auto bps = getBloodPressureRecords(std::nullopt, std::nullopt);
+    if (bps.empty()) return 0.0;
+
+    double sum = 0.0;
+    int n = 0;
+    // 倒序遍历取最近 N 次有收缩压的记录
+    for (auto it = bps.rbegin(); it != bps.rend() && n < count; ++it) {
+        if (it->systolic) {
+            sum += static_cast<double>(*it->systolic);
+            ++n;
+        }
+    }
+    return (n > 0) ? sum / static_cast<double>(n) : 0.0;
+}
+
 // ============================================================
 // 风险计算
 // ============================================================
@@ -407,75 +517,70 @@ std::string HealthManagerImpl::getBMICategory() const {
 }
 
 double HealthManagerImpl::calculateASCVDScore() const {
-    std::cerr << "[Backend] 计算 ASCVD 风险评分..." << std::endl;
+    std::cerr << "[Backend] 计算 China-PAR ASCVD 风险评分..." << std::endl;
 
-    // 1. 获取用户档案
-    std::string userSql = "SELECT * FROM user_profile LIMIT 1";
-    std::string userJson = dataAccess_->queryRecords(userSql);
-
-    // 2. 获取最新血脂数据
-    std::string labSql =
-        "SELECT * FROM lab_test_records "
-        "WHERE total_cholesterol IS NOT NULL AND hdl_c IS NOT NULL "
-        "ORDER BY timestamp DESC LIMIT 1";
-    std::string labJson = dataAccess_->queryRecords(labSql);
-
-    // 3. 获取最新血压
-    std::string bpSql =
-        "SELECT * FROM blood_pressure_records "
-        "WHERE systolic IS NOT NULL "
-        "ORDER BY timestamp DESC LIMIT 1";
-    std::string bpJson = dataAccess_->queryRecords(bpSql);
-
-    try {
-        json user = json::parse(userJson);
-        json lab  = json::parse(labJson);
-        json bp   = json::parse(bpJson);
-
-        std::cerr << "[Backend] ASCVD 参数: "
-                  << "user_profile=" << (user.empty() ? "缺失" : "已加载") << ", "
-                  << "lab=" << (lab.empty() ? "缺失" : "已加载") << ", "
-                  << "bp=" << (bp.empty() ? "缺失" : "已加载") << std::endl;
-
-        if (user.empty() || lab.empty() || bp.empty()) {
-            std::cerr << "[Backend] ASCVD: 缺少必要数据，返回 0" << std::endl;
-            return 0.0;
-        }
-
-        // 提取参数（展示数据接入能力）
-        std::string gender  = user[0].value("gender", "");
-        std::string smoking = user[0].value("smoking_status", "");
-        double totalChol    = lab[0].value("total_cholesterol", 0.0);
-        double hdl          = lab[0].value("hdl_c", 0.0);
-        int systolic        = bp[0].value("systolic", 0);
-
-        std::cerr << "[Backend] ASCVD 参数详情: "
-                  << "gender=" << gender
-                  << ", smoking=" << smoking
-                  << ", TC=" << totalChol
-                  << ", HDL=" << hdl
-                  << ", SBP=" << systolic << std::endl;
-
-        // TODO(Felis1204): 实现完整的 2018 AHA/ACC ASCVD 风险方程
-        //   Pooled Cohort Equations — 需按性别+种族查表计算:
-        //   Risk = 1 - S0^exp(Σ(coefficient × (log(x) - mean)))
-        //   参考: Circulation. 2014;129(suppl 3):S1-S45
-
-        // 简化占位: 根据血脂和血压给出初步风险提示
-        double riskHint = 5.0; // 基线
-        if (hdl < 1.0)  riskHint += 2.0;
-        if (hdl < 0.8)  riskHint += 2.0;
-        if (totalChol > 5.2) riskHint += 2.0;
-        if (totalChol > 6.2) riskHint += 2.0;
-        if (systolic > 140)  riskHint += 3.0;
-        if (smoking == "CURRENT") riskHint += 4.0;
-
-        return riskHint;
-
-    } catch (const json::parse_error& e) {
-        std::cerr << "[Backend] ASCVD JSON 解析失败: " << e.what() << std::endl;
+    // ---- 1. 获取用户档案 ----
+    auto profileOpt = getUserProfile();
+    if (!profileOpt) {
+        std::cerr << "[Backend] ASCVD: 缺少用户档案，返回 0" << std::endl;
         return 0.0;
     }
+    const auto& p = *profileOpt;
+
+    // ---- 2. 计算身份证年龄 ----
+    int age = calculateAge(p.birthDate);
+    if (age < 35 || age > 74) {
+        std::cerr << "[Backend] ASCVD: 年龄 " << age
+                  << " 超出 China-PAR 适用范围 (35-74)" << std::endl;
+        return 0.0;
+    }
+
+    // ---- 3. 收缩压（近 3 次均值）----
+    double avgSbp = getAverageSystolicBP(3);
+    if (avgSbp <= 0.0) {
+        std::cerr << "[Backend] ASCVD: 缺少血压数据" << std::endl;
+        return 0.0;
+    }
+
+    // ---- 4. 最新血脂 ----
+    auto labs = getLabTestRecords(std::nullopt, std::nullopt);
+    if (labs.empty()) {
+        std::cerr << "[Backend] ASCVD: 缺少临床检验数据" << std::endl;
+        return 0.0;
+    }
+    const auto& lab = labs.back();
+    if (!lab.totalCholesterol || !lab.hdlC || !lab.fastingGlucose) {
+        std::cerr << "[Backend] ASCVD: 血脂或血糖数据不完整" << std::endl;
+        return 0.0;
+    }
+
+    // ---- 5. 最新腰围 ----
+    double waist = 0.0;
+    auto vitals = getVitalsRecords(std::nullopt, std::nullopt);
+    for (auto it = vitals.rbegin(); it != vitals.rend(); ++it) {
+        if (it->waistCm) {
+            waist = *it->waistCm;
+            break;
+        }
+    }
+
+    // ---- 6. 组装 ASCVDParams ----
+    ASCVDParams params;
+    params.age              = age;
+    params.isMale           = (p.gender && *p.gender == "MALE");
+    params.systolicBP       = avgSbp;
+    params.fastingGlucose   = *lab.fastingGlucose;
+    params.totalCholesterol = *lab.totalCholesterol;
+    params.hdlC             = *lab.hdlC;
+    params.waistCm          = waist;
+    params.isCurrentSmoker  = (p.smokingStatus && *p.smokingStatus == "CURRENT");
+    params.hasDiabetes      = (p.hasDiabetes && *p.hasDiabetes);
+    params.isNorthern       = (!p.region || *p.region != "SOUTH");  // 默认北方
+    params.isUrban          = (!p.urbanRural || *p.urbanRural != "RURAL"); // 默认城市
+    params.hasFamilyHistory = (p.familyHistoryASCVD && *p.familyHistoryASCVD);
+
+    // ---- 7. 调用 China-PAR 计算器 ----
+    return ASCVDCalculator::calculateChinaPAR(params);
 }
 
 // ============================================================
@@ -596,12 +701,13 @@ std::string HealthManagerImpl::generateHealthReport() const {
             oss << "  " << *latest.systolic << "/" << *latest.diastolic << " mmHg\n";
     }
 
-    // ASCVD
+    // ASCVD (China-PAR)
     double ascvd = calculateASCVDScore();
     if (ascvd > 0.0) {
-        oss << "\n【心血管风险】\n";
-        oss << "  10年 ASCVD 风险评估: " << std::fixed << std::setprecision(1)
-            << ascvd << "%\n";
+        std::string category = ASCVDCalculator::getRiskCategory(ascvd);
+        oss << "\n【心血管风险 (China-PAR)】\n";
+        oss << "  10年 ASCVD 风险: " << std::fixed << std::setprecision(1)
+            << ascvd << "% — " << category << "\n";
     }
 
     oss << "\n[提示] 接入 LLM 服务后将提供 AI 驱动的个性化解读。\n";

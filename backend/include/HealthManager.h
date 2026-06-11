@@ -9,6 +9,7 @@
 #include "Models/VitalsRecord.h"
 #include "Models/LabTestRecord.h"
 #include "Models/BloodPressureRecord.h"
+#include "Models/UserProfile.h"
 
 namespace health {
 
@@ -57,6 +58,12 @@ public:
     virtual std::vector<LabTestRecord> getLabTestRecords(
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const = 0;
+
+    /// @brief 保存/更新用户档案（单用户系统）
+    virtual bool saveUserProfile(const UserProfile& profile) = 0;
+
+    /// @brief 获取用户档案（返回第一条记录）
+    virtual std::optional<UserProfile> getUserProfile() const = 0;
 
     // ---- 风险计算 ----
 
