@@ -31,6 +31,9 @@ Makefile
 # 第三方依赖（通过 FetchContent 管理，无需提交）
 third_party/_fetch/
 
+# 本地数据库文件（SQLite）
+*.db
+
 # 打包产物
 *.zip
 *.tar.gz
