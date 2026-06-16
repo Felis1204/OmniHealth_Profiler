@@ -1,75 +1,107 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <vector>
-#include <chrono>
+#include <memory>
 #include <optional>
+
+#include "Models/HealthRecord.h"
+#include "Models/VitalsRecord.h"
+#include "Models/LabTestRecord.h"
+#include "Models/BloodPressureRecord.h"
+#include "Models/UserProfile.h"
 
 namespace health {
 
-/// @brief 健康数据类型枚举
-enum class HealthMetricType {
-    STEPS,              // 步数
-    HEART_RATE,         // 心率 (bpm)
-    BLOOD_PRESSURE,     // 血压
-    BLOOD_SUGAR,        // 血糖
-    SLEEP_HOURS,        // 睡眠时长
-    WEIGHT_KG,          // 体重
-    BMI,                // 身体质量指数
-    CUSTOM              // 自定义
+/// @brief 趋势分析结果
+struct TrendResult {
+    double average;
+    double min;
+    double max;
+    double median;
+    double slope;  // 趋势斜率（正=上升，负=下降）
 };
 
-/// @brief 单条健康记录的数据结构
-struct HealthRecord {
-    std::string id;                         // 唯一标识符
-    HealthMetricType type;                  // 数据类型
-    double value;                           // 数值
-    std::string unit;                       // 单位 (如 "bpm", "kg", "steps")
-    std::chrono::system_clock::time_point timestamp;  // 记录时间
-    std::optional<std::string> note;        // 可选备注
-};
-
-/// @brief HealthManager 契约接口
+/// @brief HealthManager 控制器 —— 对外统一接口
 ///
-/// 前端(Frontend) 只能通过本接口与后端(Backend)交互，
-/// 所有业务逻辑、数据存储、模型对接均在后端实现。
+/// 前端只能通过本接口与后端交互。
+/// 所有内部实现（SQLite 操作、LLM 请求、风险计算）均隐藏在 .cpp 中。
 class HealthManager {
 public:
     HealthManager() = default;
     virtual ~HealthManager() = default;
 
-    // ---- 基础 CRUD ----
+    // ---- CRUD ----
 
-    /// @brief 添加一条健康记录
-    /// @param record 待添加的健康记录
-    /// @return 成功返回 true，失败返回 false
-    virtual bool addRecord(const HealthRecord& record) = 0;
+    /// @brief 添加体征记录
+    virtual bool addVitalsRecord(const VitalsRecord& record) = 0;
 
-    /// @brief 获取所有健康记录
-    /// @return 当前全部记录的副本
-    virtual std::vector<HealthRecord> getRecords() const = 0;
+    /// @brief 添加临床检验记录
+    virtual bool addLabTestRecord(const LabTestRecord& record) = 0;
 
-    /// @brief 按类型筛选记录
+    /// @brief 添加血压记录
+    virtual bool addBloodPressureRecord(const BloodPressureRecord& record) = 0;
+
+    /// @brief 按时间范围获取体征记录
+    /// @param from 起始时间（nullopt 表示无下限）
+    /// @param to 截止时间（nullopt 表示无上限）
+    virtual std::vector<VitalsRecord> getVitalsRecords(
+        std::optional<TimePoint> from,
+        std::optional<TimePoint> to) const = 0;
+
+    /// @brief 按时间范围获取血压记录
+    virtual std::vector<BloodPressureRecord> getBloodPressureRecords(
+        std::optional<TimePoint> from,
+        std::optional<TimePoint> to) const = 0;
+
+    /// @brief 按时间范围获取临床检验记录
+    virtual std::vector<LabTestRecord> getLabTestRecords(
+        std::optional<TimePoint> from,
+        std::optional<TimePoint> to) const = 0;
+
+    /// @brief 保存/更新用户档案（单用户系统）
+    virtual bool saveUserProfile(const UserProfile& profile) = 0;
+
+    /// @brief 获取用户档案（返回第一条记录）
+    virtual std::optional<UserProfile> getUserProfile() const = 0;
+
+    // ---- 风险计算 ----
+
+    /// @brief 计算 10 年 ASCVD 风险评分（动脉粥样硬化性心血管疾病）
+    virtual double calculateASCVDScore() const = 0;
+
+    /// @brief 计算身体质量指数
+    virtual double calculateBMI() const = 0;
+
+    /// @brief 获取 BMI 分级描述
+    virtual std::string getBMICategory() const = 0;
+
+    // ---- 趋势分析 ----
+
+    /// @brief 分析指定类型的指标趋势
     /// @param type 健康数据类型
-    /// @return 匹配类型的记录列表
-    virtual std::vector<HealthRecord> getRecordsByType(HealthMetricType type) const = 0;
+    /// @param from 起始时间
+    /// @param to 截止时间
+    virtual TrendResult analyzeTrend(HealthRecordType type,
+        TimePoint from,
+        TimePoint to) const = 0;
 
-    // ---- 数据分析 ----
+    // ---- LLM 咨询 ----
 
-    /// @brief 生成健康分析报告（预留给大模型 API 的接口）
-    /// @return 格式化的健康报告文本
+    /// @brief 生成健康分析报告
     virtual std::string generateHealthReport() const = 0;
 
     /// @brief 获取指定类型的统计摘要
     /// @param type 健康数据类型
     /// @return 包含 min/max/avg 等统计信息的摘要字符串
     virtual std::string getStatistics(HealthMetricType type) const = 0;
-    virtual std::string aalqp(){return "Hallo world!";}
+
+    /// @brief 向 AI 健康顾问提问
+    /// @param userQuery 用户问题
+    virtual std::string askHealthAdvisor(const std::string& userQuery) const = 0;
 };
 
-} // namespace health
+/// @brief 工厂函数 —— 创建 HealthManager 实例
+std::unique_ptr<HealthManager> createHealthManager();
 
-/// @brief 工厂函数 —— 前端通过此接口获取 HealthManager 实例
-/// @return HealthManager 的唯一指针（PIMPL + 多态）
-std::unique_ptr<health::HealthManager> CreateHealthManager();
+} // namespace health

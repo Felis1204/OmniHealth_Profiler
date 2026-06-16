@@ -38,7 +38,6 @@ This is **OmniHealth Profiler**, a C++ desktop personal health management system
 ```
 Health_Manager/
 ├── CMakeLists.txt              # Root: C++17, adds backend/include globally
-├── .clinerules                 # AI coding conventions (must follow)
 ├── docs/
 │   ├── PRD.md                  # Product requirements & feature specs
 │   └── SYSTEM_DESIGN.md        # Architecture, class design, data flow, DB schema
@@ -81,4 +80,3 @@ Health_Manager/
 
 - **`docs/PRD.md`** — Business context and feature requirements
 - **`docs/SYSTEM_DESIGN.md`** — Full architecture (MVC layers, planned class hierarchy, data flow, SQLite schema)
-- **`.clinerules`** — Detailed coding rules for AI-assisted generation

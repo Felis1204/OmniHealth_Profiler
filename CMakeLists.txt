@@ -15,6 +15,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ---- IntelliSense 支持 ----
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# ---- 编译器警告 ----
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
 # 将 backend/include 加入全局头文件搜索路径，
 # 使 frontend 也能通过 #include "HealthManager.h" 找到契约头文件
 include_directories(${CMAKE_SOURCE_DIR}/backend/include)
