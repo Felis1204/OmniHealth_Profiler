@@ -65,6 +65,7 @@ public:
     /// @param type 健康数据类型
     /// @return 包含 min/max/avg 等统计信息的摘要字符串
     virtual std::string getStatistics(HealthMetricType type) const = 0;
+    virtual std::string aalqp(){return "Hallo world!";}
 };
 
 } // namespace health
