@@ -368,7 +368,7 @@ public:
         llmService_->configure(
             "https://api.deepseek.com/chat/completions",
             "",   // 空字符串 → 从环境变量 OPENAI_API_KEY 读取
-            "deepseek-chat"
+            "deepseek-v4-pro"
         );
         if (llmService_->isConfigured()) {
             std::cerr << "[Backend] AI 顾问已就绪" << std::endl;
@@ -433,11 +433,15 @@ public:
     std::string generateAIReport(ReportPeriod period) override;
 
     // ---- LLM 咨询 ----
-    std::string askHealthAdvisor(const std::string& userQuery) const override;
+    std::string askFollowUp(const std::string& userQuestion) override;
 
 private:
     std::unique_ptr<DataAccess> dataAccess_;
     std::unique_ptr<LLMService> llmService_;
+
+    // 追问上下文缓存（由 generateAIReport 填充）
+    std::string lastHealthContext_;   // 脱敏后的健康数据摘要
+    std::string lastPeriodLabel_;     // "周报" / "月报"
 
     /// @brief 构建带时间范围过滤的 SQL
     std::string buildTimeRangeQuery(
@@ -1256,6 +1260,10 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
         userPrompt = fallback.str();
     }
 
+    // 缓存健康数据上下文，供后续追问使用
+    lastHealthContext_ = userPrompt;
+    lastPeriodLabel_ = periodLabel;
+
     // 调用 AI
     std::cerr << "[Backend] 正在请求 AI 生成" << periodLabel << "..." << std::endl;
     std::string aiResponse = llmService_->chat(systemPrompt, userPrompt);
@@ -1265,6 +1273,7 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
                     aiResponse.find("\"error\":") != std::string::npos);
 
     if (isError) {
+        lastHealthContext_.clear();  // 失败时清除上下文
         std::cerr << "[Backend] AI 请求失败，降级为本地" << periodLabel << std::endl;
         std::ostringstream fallback;
         fallback << "⚠️ AI 服务暂不可用\n\n"
@@ -1273,31 +1282,40 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
         return fallback.str();
     }
 
-    std::cerr << "[Backend] AI " << periodLabel << " 生成成功" << std::endl;
+    std::cerr << "[Backend] AI " << periodLabel << " 生成成功"
+              << "（上下文已缓存，支持追问）" << std::endl;
     return aiResponse;
 }
 
-std::string HealthManagerImpl::askHealthAdvisor(const std::string& userQuery) const {
-    std::cerr << "[Backend] 收到 LLM 咨询: " << userQuery << std::endl;
+// ============================================================
+// 追问系统
+// ============================================================
 
-    // 尝试提供数据上下文（展示 RAG 管道已就绪）
-    auto vitals = getVitalsRecords(std::nullopt, std::nullopt);
-    auto labs   = getLabTestRecords(std::nullopt, std::nullopt);
-
-    std::ostringstream oss;
-    oss << "[数据摘要] 当前已录入 " << vitals.size() << " 条体征记录、"
-        << labs.size() << " 条检验记录。";
-
-    if (!vitals.empty()) {
-        const auto& v = vitals.back();
-        if (v.heartRate) oss << " 最新心率 " << *v.heartRate << " bpm。";
+std::string HealthManagerImpl::askFollowUp(const std::string& userQuestion) {
+    if (!llmService_ || !llmService_->isConfigured()) {
+        return "AI 顾问未配置，无法进行追问。请先设置 API Key。";
     }
 
-    oss << "\n\n[占位回复] AI 顾问功能将在 LLMService 接入后启用，届时可基于您的真实健康数据"
-        << "提供个性化建议。您的问题: \"" << userQuery << "\"\n\n"
-        << "免责声明：本回复仅供参考，不构成医疗建议。";
+    if (lastHealthContext_.empty()) {
+        return "尚未生成健康报告，没有可用的健康数据上下文。请先运行 generateAIReport()。";
+    }
 
-    return oss.str();
+    std::cerr << "[Backend] 收到追问: " << userQuestion << std::endl;
+
+    std::string systemPrompt = LLMService::buildFollowUpSystemPrompt(lastHealthContext_);
+    std::string userPrompt   = LLMService::buildFollowUpUserPrompt(userQuestion);
+
+    std::cerr << "[Backend] 正在请求 AI 追问回复..." << std::endl;
+    std::string response = llmService_->chat(systemPrompt, userPrompt);
+
+    // 简单错误检测
+    if (response.find("\"error\"") != std::string::npos &&
+        response.find("\"error\":") != std::string::npos) {
+        return "⚠️ AI 服务暂时不可用，请稍后重试。";
+    }
+
+    std::cerr << "[Backend] 追问回复成功" << std::endl;
+    return response;
 }
 
 } // namespace health

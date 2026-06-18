@@ -185,9 +185,13 @@ public:
     /// @return 包含 min/max/avg 等统计信息的摘要字符串
     virtual std::string getStatistics(HealthRecordType type) const = 0;
 
-    /// @brief 向 AI 健康顾问提问
-    /// @param userQuery 用户问题
-    virtual std::string askHealthAdvisor(const std::string& userQuery) const = 0;
+    /// @brief 向 AI 健康顾问追问（基于最近一次报告的健康数据上下文）
+    /// @param userQuestion 用户的追问（如"我应该怎么降血糖？"）
+    /// @return AI 回复文本
+    ///
+    /// 前提：必须先调用 generateAIReport() 生成报告，该方法会缓存健康数据上下文。
+    /// 如果尚未生成报告或 LLM 未配置，返回提示信息。
+    virtual std::string askFollowUp(const std::string& userQuestion) = 0;
 };
 
 /// @brief 工厂函数 —— 创建 HealthManager 实例

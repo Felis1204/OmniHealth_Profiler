@@ -25,7 +25,7 @@ public:
     /// @return 成功返回 true
     virtual bool configure(const std::string& endpoint,
                            const std::string& apiKey = "",
-                           const std::string& model = "deepseek-chat") = 0;
+                           const std::string& model = "deepseek-v4-pro") = 0;
 
     /// @brief 检查是否已配置 API Key
     virtual bool isConfigured() const = 0;
@@ -61,10 +61,20 @@ public:
         int days,
         const std::string& periodLabel);
 
-    /// @brief 组装 System Prompt（医疗专家人设 + 强制 JSON 输出约束）
+    /// @brief 组装 System Prompt（医疗专家人设 + 强制 JSON 输出约束 + 结尾追问引导）
     /// @param periodLabel 周期标签（"周报" / "月报"）
     /// @return System Prompt 字符串
     static std::string buildSystemPrompt(const std::string& periodLabel);
+
+    /// @brief 组装追问 System Prompt（保持专家人设，不要求 JSON）
+    /// @param healthContext 之前报告中的健康数据上下文
+    /// @return System Prompt 字符串
+    static std::string buildFollowUpSystemPrompt(const std::string& healthContext);
+
+    /// @brief 组装追问 User Prompt
+    /// @param userQuestion 用户追问的自然语言问题
+    /// @return User Prompt 字符串
+    static std::string buildFollowUpUserPrompt(const std::string& userQuestion);
 };
 
 /// @brief 工厂函数

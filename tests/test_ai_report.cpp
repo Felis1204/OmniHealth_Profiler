@@ -70,10 +70,19 @@ int main() {
     std::cout << "\n========== 本地周报（对照）==========\n";
     std::cout << mgr->generateHealthReport(HealthManager::ReportPeriod::WEEKLY);
 
-    // ---- 6. AI 报告 ----
+    // ---- 6. AI 周报 ----
     std::cout << "\n========== AI 周报 ==========\n";
     std::string aiReport = mgr->generateAIReport(HealthManager::ReportPeriod::WEEKLY);
     std::cout << aiReport << std::endl;
+
+    // ---- 7. 追问 ----
+    std::cout << "\n========== 追问1：如何降血糖？ ==========\n";
+    std::string f1 = mgr->askFollowUp("我应该怎么做才能把空腹血糖从7.5降到正常范围？请结合我的饮食和运动数据给出具体方案。");
+    std::cout << f1 << std::endl;
+
+    std::cout << "\n========== 追问2：运动建议 ==========\n";
+    std::string f2 = mgr->askFollowUp("考虑到我的血压偏高（146/91），有什么安全的运动方式推荐？需要注意什么？");
+    std::cout << f2 << std::endl;
 
     return 0;
 }

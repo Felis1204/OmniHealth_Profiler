@@ -100,7 +100,7 @@ public:
 private:
     std::string endpoint_;
     std::string apiKey_;
-    std::string model_ = "deepseek-chat";
+    std::string model_ = "deepseek-v4-pro";
     bool configured_ = false;
 
     /// @brief 发送 HTTP POST 请求，返回响应 body
@@ -115,7 +115,7 @@ bool LLMServiceImpl::configure(const std::string& endpoint,
                                 const std::string& apiKey,
                                 const std::string& model) {
     endpoint_ = endpoint;
-    model_    = model.empty() ? "deepseek-chat" : model;
+    model_    = model.empty() ? "deepseek-v4-pro" : model;
 
     // API Key: 参数优先，其次环境变量 OPENAI_API_KEY
     if (!apiKey.empty()) {
@@ -192,7 +192,7 @@ std::string LLMServiceImpl::sendRequest(const std::string& systemPrompt,
     requestBody["messages"].push_back(userMsg);
 
     requestBody["temperature"] = 0.7;
-    requestBody["max_tokens"] = 2048;
+    requestBody["max_tokens"] = 4096;
 
     std::string bodyStr = requestBody.dump();
 
@@ -266,31 +266,66 @@ std::string LLMService::buildSystemPrompt(const std::string& periodLabel) {
 你正在通过 OmniHealth 数字孪生系统为用户生成个性化健康)" + periodLabel + R"(。
 
 【重要规则】
-1. 你的所有建议必须严格基于下方提供的用户真实健康数据，不得臆测或编造。
+1. 你的所有分析必须严格基于下方提供的用户真实健康数据，不得臆测或编造。
 2. 如果某项数据缺失（标注为"无数据"），请明确说明该项无法评估，不要猜测。
-3. 使用专业但通俗易懂的中文，避免过于晦涩的医学术语。
-4. 所有建议必须附有免责声明。
+3. 使用专业但通俗易懂的中文，每项分析不少于 100 字，给出有深度、有价值的个性化解读。
+4. 对比每个异常指标与正常参考范围的偏离程度，解释其临床意义。
+5. 对于趋势标记 ↑ 或 ↓，分析变化方向是否值得担忧。
+6. 每条建议必须具体、可执行，杜绝泛泛而谈（如"多吃蔬菜"不可接受，应写"每日摄入深色蔬菜≥300g"）。
+7. 报告的结尾，请添加一句【追问引导】，鼓励用户针对报告中不理解或想深入了解的内容继续提问。
 
 【强制输出格式】
-你必须严格返回合法的 JSON 格式，不包含任何 markdown 代码块标记（如 ```json），不包含任何 JSON 之外的文字。
+你必须严格返回合法的 JSON 格式，不包含任何 markdown 代码块标记，不包含任何 JSON 之外的文字。
 JSON 结构如下：
 
 {
   "risk_analysis": {
-    "overall": "整体风险评估（2-3句话，基于 China-PAR 风险分层和异常指标）",
-    "cardiovascular": "心血管专项分析（血压、血脂、ASCVD 风险解读）",
-    "metabolic": "代谢专项分析（血糖、BMI、尿酸等解读）",
-    "alert_items": ["需要警惕的指标1", "需要警惕的指标2"]
+    "overall": "整体风险评估（至少150字。串联 ASCVD 风险分层、异常指标数量、近期趋势方向，给出综合风险画像）",
+    "cardiovascular": "心血管专项分析（至少100字。血压分级解读、血脂四项逐一分析、ASCVD 风险构成因素拆解）",
+    "metabolic": "代谢专项分析（至少100字。血糖、BMI、腰围、尿酸的联合解读，评估代谢综合征可能性）",
+    "alert_items": ["逐个列出所有值得警惕的异常指标，附带偏离程度说明"]
   },
   "action_plan": {
-    "diet": ["具体饮食建议1", "具体饮食建议2", "具体饮食建议3"],
-    "exercise": ["运动类型+时长+频率建议1", "运动建议2"],
-    "lifestyle": ["生活习惯改善建议1", "生活习惯改善建议2"],
-    "monitoring": ["建议重点监测的指标1", "建议在家自测的指标2"]
+    "diet": ["至少4条具体饮食建议，每条包含量化目标（克数/份数/频率）"],
+    "exercise": ["至少2条运动建议，包含类型、强度、时长、频率"],
+    "lifestyle": ["至少3条生活习惯建议，包含具体行为改变"],
+    "monitoring": ["至少3条监测建议，包含测量频率和警戒阈值"]
   },
-  "conclusion": "一句话核心结论（包含最关键的 1-2 个行动项）",
+  "conclusion": "一句话核心结论 + 最关键的 1-2 个立即行动项",
+  "follow_up_prompt": "💬 您可能还想了解：【列出3-4个与当前数据高度相关的追问方向，例如'我应该怎么控制血糖？'、'如何有效降低收缩压？'、'我的饮食结构应该做哪些调整？'等】",
   "disclaimer": "⚠️ 免责声明：本报告由 AI 生成，仅供参考，不构成医疗诊断或治疗建议。如有健康疑虑，请及时咨询专业医生。"
 })";
+}
+
+// ============================================================
+// buildFollowUpSystemPrompt — 追问系统人设
+// ============================================================
+std::string LLMService::buildFollowUpSystemPrompt(const std::string& healthContext) {
+    return R"(你是一位顶级的哈佛医学院心血管与代谢疾病专家，拥有 20 年临床经验。
+你正在通过 OmniHealth 数字孪生系统回答用户对其健康报告的追问。
+
+【用户的健康数据上下文】
+)" + healthContext + R"(
+
+【重要规则】
+1. 回答必须严格基于上述健康数据，不得臆测或编造。
+2. 如果用户的问题涉及数据中未包含的信息（如具体的药物使用、手术史），请明确说明"您尚未录入该信息，建议先补充"。
+3. 给出具体、量化、可操作的建议。杜绝泛泛而谈。
+4. 使用专业但通俗易懂的中文。
+5. 回答末尾请附上免责声明。
+
+【自由文本模式】
+追问环节不需要返回 JSON 格式，请用自然段落回复用户的问题。
+但如果你认为适合以结构化方式呈现（如饮食计划、运动方案），可以使用清晰的标题分段。
+)";
+}
+
+// ============================================================
+// buildFollowUpUserPrompt — 追问用户消息
+// ============================================================
+std::string LLMService::buildFollowUpUserPrompt(const std::string& userQuestion) {
+    return "用户针对上述健康数据提出了以下追问：\n\n" + userQuestion +
+           "\n\n请基于用户的真实健康数据，给出专业、具体、个性化的回答。";
 }
 
 // ============================================================
