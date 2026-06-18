@@ -92,9 +92,9 @@ public:
     virtual std::string generateHealthReport() const = 0;
 
     /// @brief 获取指定类型的统计摘要
-    /// @param type 健康数据类型
+    /// @param type 健康记录类型
     /// @return 包含 min/max/avg 等统计信息的摘要字符串
-    virtual std::string getStatistics(HealthMetricType type) const = 0;
+    virtual std::string getStatistics(HealthRecordType type) const = 0;
 
     /// @brief 向 AI 健康顾问提问
     /// @param userQuery 用户问题

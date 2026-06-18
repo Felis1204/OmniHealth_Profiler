@@ -2,39 +2,89 @@
 # Health_Manager .gitignore
 # ============================================================
 
-# 构建输出目录
+# ---- 构建输出目录 ----
 build/
+cmake-build-*/
+out/
 
-# IDE 与编辑器
+# ---- IDE 与编辑器 ----
+# Visual Studio Code
 .vscode/
+# JetBrains (CLion, IntelliJ)
 .idea/
+# Qt Creator
+.qtcreator/
+*.pro.user
+*.pro.user.*
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+# Vim
 *.swp
 *.swo
 *~
-.DS_Store
+# Emacs
+\#*\#
+# Sublime Text / Atom
+*.sublime-*
 
-# 编译产物
+# ---- 操作系统生成文件 ----
+.DS_Store
+.AppleDouble
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---- 编译产物 ----
 *.o
 *.obj
 *.exe
 *.out
 *.app
+*.ilk
+*.pdb
+*.dSYM/
 
-# CMake 生成的缓存与中间文件
+# ---- 静态库产物 ----
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+
+# ---- CMake 生成的缓存与中间文件 ----
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 Makefile
 *.cmake
 !CMakeLists.txt
+CTestTestfile.cmake
+Testing/
 
-# 第三方依赖（通过 FetchContent 管理，无需提交）
+# ---- 第三方依赖（通过 FetchContent 管理，无需提交）----
 third_party/_fetch/
 
-# 本地数据库文件（SQLite）
+# ---- 本地数据库文件（SQLite）----
 *.db
+*.sqlite
+*.sqlite3
 
-# 打包产物
+# ---- 环境与配置 ----
+.env
+.env.local
+*.local
+
+# ---- 打包产物 ----
 *.zip
 *.tar.gz
 *.dmg
+*.deb
+*.rpm
+
+# ---- 日志文件 ----
+*.log
+
+# ---- Core dumps ----
+core
+core.*

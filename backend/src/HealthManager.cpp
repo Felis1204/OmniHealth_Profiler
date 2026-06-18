@@ -319,6 +319,9 @@ public:
     TrendResult analyzeTrend(HealthRecordType type,
         TimePoint from, TimePoint to) const override;
 
+    // ---- 统计摘要 ----
+    std::string getStatistics(HealthRecordType type) const override;
+
     // ---- LLM 咨询 ----
     std::string generateHealthReport() const override;
     std::string askHealthAdvisor(const std::string& userQuery) const override;
@@ -656,6 +659,89 @@ TrendResult HealthManagerImpl::analyzeTrend(
     result.slope   = linearSlope(values);
 
     return result;
+}
+
+// ============================================================
+// 统计摘要
+// ============================================================
+
+std::string HealthManagerImpl::getStatistics(HealthRecordType type) const {
+    // 根据记录类型选择表名和数值列
+    std::string table;
+    std::vector<std::pair<std::string, std::string>> columns; // {列名, 显示名}
+
+    switch (type) {
+        case HealthRecordType::VITALS:
+            table = "vitals_records";
+            columns = {
+                {"heart_rate",  "心率"},
+                {"steps",       "步数"},
+                {"sleep_hours", "睡眠时长"},
+                {"weight_kg",   "体重"},
+                {"height_cm",   "身高"},
+                {"waist_cm",    "腰围"}
+            };
+            break;
+        case HealthRecordType::LAB_TEST:
+            table = "lab_test_records";
+            columns = {
+                {"fasting_glucose",   "空腹血糖"},
+                {"total_cholesterol", "总胆固醇"},
+                {"ldl_c",             "LDL-C"},
+                {"hdl_c",             "HDL-C"},
+                {"triglycerides",     "甘油三酯"},
+                {"uric_acid",         "尿酸"}
+            };
+            break;
+        case HealthRecordType::BP:
+            table = "blood_pressure_records";
+            columns = {
+                {"systolic",  "收缩压"},
+                {"diastolic", "舒张压"}
+            };
+            break;
+        case HealthRecordType::HISTORY:
+            return "病历摘要暂无统计指标。";
+    }
+
+    std::ostringstream oss;
+    oss << "========== 统计摘要 ==========\n";
+
+    for (const auto& [col, label] : columns) {
+        std::ostringstream sql;
+        sql << "SELECT " << col << " FROM " << table
+            << " WHERE " << col << " IS NOT NULL";
+        std::string resultJson = dataAccess_->queryRecords(sql.str());
+
+        std::vector<double> values;
+        try {
+            json arr = json::parse(resultJson);
+            for (const auto& row : arr) {
+                if (row.contains(col) && !row[col].is_null())
+                    values.push_back(row[col].get<double>());
+            }
+        } catch (const json::parse_error&) {
+            continue;
+        }
+
+        if (values.empty()) continue;
+
+        double avg = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
+        double min = *std::min_element(values.begin(), values.end());
+        double max = *std::max_element(values.begin(), values.end());
+
+        oss << "[" << label << "]\n";
+        oss << "  记录数: " << values.size() << "\n";
+        oss << "  均值: " << std::fixed << std::setprecision(1) << avg << "\n";
+        oss << "  最小值: " << min << "\n";
+        oss << "  最大值: " << max << "\n";
+    }
+
+    if (oss.str() == "========== 统计摘要 ==========\n") {
+        oss << "暂无数据。";
+    }
+
+    return oss.str();
 }
 
 // ============================================================

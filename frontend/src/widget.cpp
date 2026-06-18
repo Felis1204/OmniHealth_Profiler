@@ -16,8 +16,8 @@ Widget::~Widget()
 }
 
 void Widget::on_pushButton_clicked()
-{   QString a;
-    a=QString::fromStdString(manager_->aalqp());
-    ui->textBrowser->setText(a);
+{
+    QString report = QString::fromStdString(manager_->generateHealthReport());
+    ui->textBrowser->setText(report);
 }
 

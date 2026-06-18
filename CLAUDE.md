@@ -80,3 +80,16 @@ Health_Manager/
 
 - **`docs/PRD.md`** — Business context and feature requirements
 - **`docs/SYSTEM_DESIGN.md`** — Full architecture (MVC layers, planned class hierarchy, data flow, SQLite schema)
+
+## Compilation & Testing Strategy
+
+1. **Build on demand, do not blindly build**: During incremental development, do NOT automatically run a full build (`make`) after every edit. It's acceptable for code to be in a temporarily "incomplete" state.
+
+2. **Milestone-triggered builds**: Only run `cd build && make` when:
+   - Scenario A: You have fully implemented a complete business module (e.g., finished both .h and .cpp for DataAccess) and believe it's ready for delivery.
+   - Scenario B: The user explicitly gives instructions to "test", "compile", or "verify".
+
+3. **Error-handling principles (very important)**: If you encounter compilation errors, strictly follow these red lines:
+   - Absolutely do NOT delete core design interfaces or drastically change the SYSTEM_DESIGN architecture to force compilation.
+   - First check for basic syntax errors (missing semicolons, namespace errors) or missing `#include`.
+   - If you encounter "Undefined reference" errors, first analyze whether the corresponding .cpp hasn't been written yet. If so, ignore the error — do not blindly patch it.
