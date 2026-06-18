@@ -165,15 +165,18 @@ public:
 
     /// @brief 生成周期性健康报告（基于时段内均值）
     /// @param period WEEKLY（近7天均值）或 MONTHLY（近30天均值）
-    /// @return 格式化报告文本，含各指标均值 + BMI + ASCVD
-    ///
-    /// 报告内容：
-    ///   - 心率、步数、睡眠、体重 → 时段均值
-    ///   - 血压（收缩压/舒张压）→ 时段均值
-    ///   - 血糖、血脂 → 时段内最新值（检验频率低，均值无意义）
-    ///   - BMI → 基于最新体重/身高
-    ///   - ASCVD → China-PAR 算法（已自动聚合近期数据）
+    /// @return 格式化报告文本，含各指标均值 + BMI + ASCVD + 趋势概览
     virtual std::string generateHealthReport(ReportPeriod period) const = 0;
+
+    /// @brief 生成 AI 驱动的个性化健康报告（RAG 上下文注入）
+    /// @param period WEEKLY（近7天）或 MONTHLY（近30天）
+    /// @return JSON（AI 成功）或纯文本（降级兜底）
+    ///
+    /// AI-First 策略：
+    ///   1. 若 LLMService 已配置 API Key → 提取时段数据 → 组装 Prompt → 调用 AI
+    ///   2. 若 AI 调用失败（网络/超时/异常）→ 自动降级为 generateHealthReport(period)
+    ///   3. 若 LLMService 未配置 → 直接返回本地报告
+    virtual std::string generateAIReport(ReportPeriod period) = 0;
 
     // ---- LLM 咨询 ----
 

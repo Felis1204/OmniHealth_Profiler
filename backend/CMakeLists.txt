@@ -4,7 +4,7 @@
 #
 # 外部依赖：
 #   - SQLite3       (本地健康数据持久化存储) —— 跨平台自动查找
-#   - cpp-httplib   (连接大模型 API，实现生成式健康报告) —— TODO
+#   - cpp-httplib   (连接大模型 API，实现 AI 健康顾问) —— 已集成
 #   - nlohmann/json (JSON 解析，用于 API 请求/响应) —— 已集成
 # ============================================================
 
@@ -17,6 +17,15 @@ FetchContent_Declare(
     GIT_TAG v3.11.3
 )
 FetchContent_MakeAvailable(json)
+
+# cpp-httplib (Header-only HTTP/HTTPS 库，用于 LLM API 调用)
+# SSL: macOS 用 Security framework / Windows 用 WinHTTP / Linux 需 OpenSSL
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.18.3
+)
+FetchContent_MakeAvailable(httplib)
 
 # SQLite3 —— 跨平台查找策略
 # macOS Homebrew (Apple Silicon: /opt/homebrew, Intel: /usr/local)
@@ -70,24 +79,34 @@ target_include_directories(health_backend
         ${SQLite3_INCLUDE_DIRS}
 )
 
-# 链接 SQLite3
-# SQLite3 的 CMake 目标名因包管理器而异：
-#   - 标准 FindSQLite3 模块 (CMake 3.14+) → SQLite3::SQLite3（推荐）
-#   - 旧版 FindSQLite3 / vcpkg           → SQLite::SQLite3（deprecated 别名）
-#   - vcpkg 的 sqlite3 端口              → unofficial::sqlite3::sqlite3
-# 这里采用兼容策略：优先使用推荐目标，若都不存在则手动创建
+# 链接 SQLite3 + nlohmann/json + cpp-httplib
+# SQLite3 的 CMake 目标名因包管理器而异
+set(JSON_TARGET nlohmann_json::nlohmann_json)
 if(TARGET SQLite3::SQLite3)
-    target_link_libraries(health_backend PUBLIC SQLite3::SQLite3 nlohmann_json::nlohmann_json)
+    set(SQLITE_TARGET SQLite3::SQLite3)
 elseif(TARGET SQLite::SQLite3)
-    target_link_libraries(health_backend PUBLIC SQLite::SQLite3 nlohmann_json::nlohmann_json)
+    set(SQLITE_TARGET SQLite::SQLite3)
 else()
-    # 手动创建 IMPORTED 目标（降级方案）
     add_library(SQLite3::SQLite3 UNKNOWN IMPORTED)
     set_target_properties(SQLite3::SQLite3 PROPERTIES
         IMPORTED_LOCATION "${SQLite3_LIBRARY}"
         INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIR}"
     )
-    target_link_libraries(health_backend PUBLIC SQLite3::SQLite3 nlohmann_json::nlohmann_json)
+    set(SQLITE_TARGET SQLite3::SQLite3)
+endif()
+
+target_link_libraries(health_backend PUBLIC
+    ${SQLITE_TARGET}
+    ${JSON_TARGET}
+    httplib::httplib
+)
+
+# macOS: 需要显式链接 Security/CoreFoundation 以支持 HTTPS
+if(APPLE)
+    target_link_libraries(health_backend PUBLIC
+        "-framework Security"
+        "-framework CoreFoundation"
+    )
 endif()
 
 # 要求 C++17

@@ -1,6 +1,7 @@
 #include "HealthManager.h"
 #include "DataAccess.h"
 #include "ASCVDCalculator.h"
+#include "LLMService.h"
 #include "PlatformCompat.h"
 
 #include <algorithm>
@@ -354,12 +355,25 @@ static std::string formatPeriodLabel(
 class HealthManagerImpl : public HealthManager {
 public:
     HealthManagerImpl()
-        : dataAccess_(createDataAccess())
+        : dataAccess_(createDataAccess()),
+          llmService_(createLLMService())
     {
         std::cerr << "[Backend] HealthManagerImpl 初始化开始" << std::endl;
 
         if (!dataAccess_->initialize("omnihealth.db")) {
             std::cerr << "[Backend] 警告: 数据库初始化失败，部分功能不可用" << std::endl;
+        }
+
+        // 尝试配置 LLMService（从环境变量读取 API Key）
+        llmService_->configure(
+            "https://api.deepseek.com/v1/chat/completions",
+            "",   // 空字符串 → 从环境变量 OPENAI_API_KEY 读取
+            "deepseek-chat"
+        );
+        if (llmService_->isConfigured()) {
+            std::cerr << "[Backend] AI 顾问已就绪" << std::endl;
+        } else {
+            std::cerr << "[Backend] AI 顾问未配置，将使用本地报告" << std::endl;
         }
 
         std::cerr << "[Backend] HealthManagerImpl 初始化完成" << std::endl;
@@ -416,12 +430,14 @@ public:
     // ---- 健康报告 ----
     std::string generateHealthReport() const override;
     std::string generateHealthReport(ReportPeriod period) const override;
+    std::string generateAIReport(ReportPeriod period) override;
 
     // ---- LLM 咨询 ----
     std::string askHealthAdvisor(const std::string& userQuery) const override;
 
 private:
     std::unique_ptr<DataAccess> dataAccess_;
+    std::unique_ptr<LLMService> llmService_;
 
     /// @brief 构建带时间范围过滤的 SQL
     std::string buildTimeRangeQuery(
@@ -1178,6 +1194,87 @@ std::string HealthManagerImpl::generateHealthReport(ReportPeriod period) const {
 
     oss << "\n============================================================\n";
     return oss.str();
+}
+
+// ============================================================
+// AI 驱动健康报告（AI-First + 离线降级）
+// ============================================================
+
+std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
+    int days = (period == ReportPeriod::WEEKLY) ? 7 : 30;
+    std::string periodLabel = (period == ReportPeriod::WEEKLY) ? "周报" : "月报";
+
+    // ---- 离线降级路径 ----
+    if (!llmService_ || !llmService_->isConfigured()) {
+        std::cerr << "[Backend] AI 顾问未配置，使用本地" << periodLabel << std::endl;
+        return generateHealthReport(period);
+    }
+
+    // ---- AI 路径: 提取数据 ----
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    auto from = now - hours(24 * days);
+
+    auto profileOpt = getUserProfile();
+    auto vitals = getVitalsRecords(from, now);
+    auto bps    = getBloodPressureRecords(from, now);
+    auto labs   = getLabTestRecords(std::nullopt, std::nullopt);  // 全部检验
+
+    double bmi = calculateBMI();
+    std::string bmiCategory = getBMICategory();
+    double ascvd = calculateASCVDScore();
+    std::string ascvdCategory = ASCVDCalculator::getRiskCategory(ascvd);
+
+    // 趋势摘要
+    std::ostringstream trendSummary;
+    for (auto recType : {HealthRecordType::BP, HealthRecordType::VITALS}) {
+        auto report = analyzeTrendReport(recType, from, now);
+        for (const auto& mt : report.metrics) {
+            const char* direction = (mt.slope > 0.05)  ? "↑" :
+                                     (mt.slope < -0.05) ? "↓" : "→";
+            trendSummary << "  - " << mt.metricName << ": 均值 "
+                         << std::fixed << std::setprecision(1) << mt.average
+                         << " " << mt.unit << " " << direction
+                         << " (" << mt.count << "次)\n";
+        }
+    }
+
+    // 组装 Prompt
+    std::string systemPrompt = LLMService::buildSystemPrompt(periodLabel);
+
+    std::string userPrompt;
+    if (profileOpt) {
+        userPrompt = LLMService::buildHealthContextPrompt(
+            *profileOpt, vitals, bps, labs,
+            bmi, bmiCategory, ascvd, ascvdCategory,
+            trendSummary.str(), days, periodLabel);
+    } else {
+        // 无用户档案时的降级 Prompt
+        std::ostringstream fallback;
+        fallback << "用户尚未创建健康档案。请生成一份简短的" << periodLabel
+                 << "，说明需要先完善档案才能获得个性化分析。";
+        userPrompt = fallback.str();
+    }
+
+    // 调用 AI
+    std::cerr << "[Backend] 正在请求 AI 生成" << periodLabel << "..." << std::endl;
+    std::string aiResponse = llmService_->chat(systemPrompt, userPrompt);
+
+    // 检查是否为错误 JSON
+    bool isError = (aiResponse.find("\"error\"") != std::string::npos &&
+                    aiResponse.find("\"error\":") != std::string::npos);
+
+    if (isError) {
+        std::cerr << "[Backend] AI 请求失败，降级为本地" << periodLabel << std::endl;
+        std::ostringstream fallback;
+        fallback << "⚠️ AI 服务暂不可用\n\n"
+                 << "以下为本地生成的" << periodLabel << ":\n\n"
+                 << generateHealthReport(period);
+        return fallback.str();
+    }
+
+    std::cerr << "[Backend] AI " << periodLabel << " 生成成功" << std::endl;
+    return aiResponse;
 }
 
 std::string HealthManagerImpl::askHealthAdvisor(const std::string& userQuery) const {
