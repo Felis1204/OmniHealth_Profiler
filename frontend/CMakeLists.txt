@@ -26,16 +26,19 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/Forms)
 set(FRONTEND_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AddData.cpp
 )
 
-# 显式列出头文件
+# 显式列出头文件（包含 Q_OBJECT 的头文件必须在此，AUTOMOC 才能处理）
 set(FRONTEND_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/widget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/AddData.h
 )
 
 # 显式列出 UI 设计文件
 set(FRONTEND_FORMS
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/widget.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/AddData.ui
 )
 
 # 编译为可执行文件

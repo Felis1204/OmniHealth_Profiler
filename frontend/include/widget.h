@@ -20,6 +20,8 @@ public:
 private slots:
     void on_pushButton_clicked();
 
+    void on_AddDataButton_clicked();
+
 private:
     Ui::Widget *ui;
     std::unique_ptr<health::HealthManager> manager_;

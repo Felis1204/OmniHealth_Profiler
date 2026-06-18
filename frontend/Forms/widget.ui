@@ -36,6 +36,19 @@
     </rect>
    </property>
   </widget>
+  <widget class="QPushButton" name="AddDataButton">
+   <property name="geometry">
+    <rect>
+     <x>110</x>
+     <y>450</y>
+     <width>91</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>新增档案</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
