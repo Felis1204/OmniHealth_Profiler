@@ -171,6 +171,7 @@ std::string LLMServiceImpl::sendRequest(const std::string& systemPrompt,
 
     // 创建 HTTPS 客户端
     httplib::Client cli(host);
+    cli.set_follow_location(true);    // 跟随 HTTP 重定向
     cli.set_connection_timeout(10);   // 连接超时 10s
     cli.set_read_timeout(60);         // 读取超时 60s（AI 推理可能需要时间）
     cli.set_write_timeout(30);

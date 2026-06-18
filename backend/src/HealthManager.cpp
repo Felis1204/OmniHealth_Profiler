@@ -366,7 +366,7 @@ public:
 
         // 尝试配置 LLMService（从环境变量读取 API Key）
         llmService_->configure(
-            "https://api.deepseek.com/v1/chat/completions",
+            "https://api.deepseek.com/chat/completions",
             "",   // 空字符串 → 从环境变量 OPENAI_API_KEY 读取
             "deepseek-chat"
         );
