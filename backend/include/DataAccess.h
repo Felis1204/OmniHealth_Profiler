@@ -25,6 +25,19 @@ public:
     /// @return 成功返回 true
     virtual bool insertRecord(const std::string& table, const std::string& jsonValue) = 0;
 
+    /// @brief 按主键删除一条记录
+    /// @param table 目标表名
+    /// @param id 主键值
+    /// @return 成功返回 true（记录不存在时也返回 true，幂等）
+    virtual bool deleteRecord(const std::string& table, const std::string& id) = 0;
+
+    /// @brief 按主键更新一条记录
+    /// @param table 目标表名
+    /// @param id 主键值
+    /// @param jsonValue JSON 格式的部分/完整更新值
+    /// @return 成功返回 true（记录不存在时返回 false）
+    virtual bool updateRecord(const std::string& table, const std::string& id, const std::string& jsonValue) = 0;
+
     /// @brief 通用查询接口
     /// @param sql SQL 查询语句
     /// @return JSON 格式的查询结果

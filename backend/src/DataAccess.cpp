@@ -78,6 +78,8 @@ public:
 
     // ---- CRUD ----
     bool insertRecord(const std::string& table, const std::string& jsonValue) override;
+    bool deleteRecord(const std::string& table, const std::string& id) override;
+    bool updateRecord(const std::string& table, const std::string& id, const std::string& jsonValue) override;
     std::string queryRecords(const std::string& sql) override;
 
     // ---- 版本迁移 ----
@@ -308,6 +310,158 @@ bool DataAccessImpl::insertRecord(const std::string& table,
     }
 
     return true;
+}
+
+// ============================================================
+// deleteRecord
+// ============================================================
+bool DataAccessImpl::deleteRecord(const std::string& table,
+                                   const std::string& id) {
+    if (!db_) {
+        std::cerr << "[DataAccess] deleteRecord 失败: 数据库未初始化" << std::endl;
+        return false;
+    }
+
+    // 表名白名单校验
+    const auto& allowed = getAllowedTables();
+    if (std::find(allowed.begin(), allowed.end(), table) == allowed.end()) {
+        std::cerr << "[DataAccess] deleteRecord 失败: 非法表名 " << table << std::endl;
+        return false;
+    }
+
+    std::string sql = "DELETE FROM " + table + " WHERE id = ?";
+
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "[DataAccess] DELETE 预编译失败: " << sqlite3_errmsg(db_) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, id.c_str(), -1, SQLITE_TRANSIENT);
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        std::cerr << "[DataAccess] DELETE 执行失败: " << sqlite3_errmsg(db_) << std::endl;
+        return false;
+    }
+
+    return true; // 幂等：记录不存在也返回 true
+}
+
+// ============================================================
+// updateRecord
+// ============================================================
+bool DataAccessImpl::updateRecord(const std::string& table,
+                                   const std::string& id,
+                                   const std::string& jsonValue) {
+    if (!db_) {
+        std::cerr << "[DataAccess] updateRecord 失败: 数据库未初始化" << std::endl;
+        return false;
+    }
+
+    // 表名白名单校验
+    const auto& allowed = getAllowedTables();
+    if (std::find(allowed.begin(), allowed.end(), table) == allowed.end()) {
+        std::cerr << "[DataAccess] updateRecord 失败: 非法表名 " << table << std::endl;
+        return false;
+    }
+
+    // 解析 JSON
+    json j;
+    try {
+        j = json::parse(jsonValue);
+    } catch (const json::parse_error& e) {
+        std::cerr << "[DataAccess] JSON 解析失败: " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!j.is_object()) {
+        std::cerr << "[DataAccess] JSON 根元素必须是对象" << std::endl;
+        return false;
+    }
+
+    // 获取列映射（排除 id，因为 id 作为 WHERE 条件）
+    const auto& columns = getTableColumns(table);
+    if (columns.empty()) {
+        std::cerr << "[DataAccess] 无法获取表 " << table << " 的列定义" << std::endl;
+        return false;
+    }
+
+    // 构建 UPDATE SQL: UPDATE table SET col1=?, col2=?, ... WHERE id = ?
+    std::string sql = "UPDATE " + table + " SET ";
+    bool first = true;
+    for (const auto& col : columns) {
+        if (col == "id") continue; // id 放 WHERE 子句
+        if (j.contains(col)) {
+            if (!first) sql += ", ";
+            sql += col + " = ?";
+            first = false;
+        }
+    }
+
+    if (first) {
+        std::cerr << "[DataAccess] updateRecord: JSON 中没有可更新的列" << std::endl;
+        return false;
+    }
+
+    sql += " WHERE id = ?";
+
+    // 预编译
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db_, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "[DataAccess] UPDATE 预编译失败: " << sqlite3_errmsg(db_) << std::endl;
+        return false;
+    }
+
+    // 绑定 SET 子句的值（按 JSON 中出现顺序），然后绑定 WHERE id
+    int bindIdx = 1;
+    for (const auto& col : columns) {
+        if (col == "id") continue;
+        if (!j.contains(col)) continue;
+
+        const auto& val = j[col];
+        if (val.is_null()) {
+            rc = sqlite3_bind_null(stmt, bindIdx);
+        } else if (val.is_string()) {
+            const std::string& s = val.get_ref<const std::string&>();
+            rc = sqlite3_bind_text(stmt, bindIdx, s.c_str(), -1, SQLITE_TRANSIENT);
+        } else if (val.is_number_integer()) {
+            rc = sqlite3_bind_int64(stmt, bindIdx, val.get<int64_t>());
+        } else if (val.is_number_float()) {
+            rc = sqlite3_bind_double(stmt, bindIdx, val.get<double>());
+        } else if (val.is_boolean()) {
+            rc = sqlite3_bind_int(stmt, bindIdx, val.get<bool>() ? 1 : 0);
+        } else {
+            std::cerr << "[DataAccess] 不支持的 JSON 类型，列 " << col << std::endl;
+            sqlite3_finalize(stmt);
+            return false;
+        }
+
+        if (rc != SQLITE_OK) {
+            std::cerr << "[DataAccess] UPDATE 参数绑定失败，列 " << col
+                      << ": " << sqlite3_errmsg(db_) << std::endl;
+            sqlite3_finalize(stmt);
+            return false;
+        }
+        ++bindIdx;
+    }
+
+    // 绑定 WHERE id
+    sqlite3_bind_text(stmt, bindIdx, id.c_str(), -1, SQLITE_TRANSIENT);
+
+    rc = sqlite3_step(stmt);
+    int changes = sqlite3_changes(db_);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        std::cerr << "[DataAccess] UPDATE 执行失败: " << sqlite3_errmsg(db_) << std::endl;
+        return false;
+    }
+
+    return changes > 0; // 有行被更新才返回 true
 }
 
 // ============================================================

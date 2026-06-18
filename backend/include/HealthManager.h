@@ -42,6 +42,25 @@ public:
     /// @brief 添加血压记录
     virtual bool addBloodPressureRecord(const BloodPressureRecord& record) = 0;
 
+    /// @brief 更新体征记录（按 id 匹配，只更新 JSON 中存在的字段）
+    virtual bool updateVitalsRecord(const VitalsRecord& record) = 0;
+
+    /// @brief 更新临床检验记录
+    virtual bool updateLabTestRecord(const LabTestRecord& record) = 0;
+
+    /// @brief 更新血压记录
+    virtual bool updateBloodPressureRecord(const BloodPressureRecord& record) = 0;
+
+    /// @brief 删除体征记录
+    /// @param id 记录主键
+    virtual bool deleteVitalsRecord(const std::string& id) = 0;
+
+    /// @brief 删除临床检验记录
+    virtual bool deleteLabTestRecord(const std::string& id) = 0;
+
+    /// @brief 删除血压记录
+    virtual bool deleteBloodPressureRecord(const std::string& id) = 0;
+
     /// @brief 按时间范围获取体征记录
     /// @param from 起始时间（nullopt 表示无下限）
     /// @param to 截止时间（nullopt 表示无上限）
@@ -59,11 +78,15 @@ public:
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const = 0;
 
-    /// @brief 保存/更新用户档案（单用户系统）
+    /// @brief 保存/更新用户档案（单用户系统，存在则更新，不存在则插入）
     virtual bool saveUserProfile(const UserProfile& profile) = 0;
 
     /// @brief 获取用户档案（返回第一条记录）
     virtual std::optional<UserProfile> getUserProfile() const = 0;
+
+    /// @brief 删除用户档案
+    /// @param id 用户主键
+    virtual bool deleteUserProfile(const std::string& id) = 0;
 
     // ---- 风险计算 ----
 

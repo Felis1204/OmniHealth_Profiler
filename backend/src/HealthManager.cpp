@@ -295,6 +295,14 @@ public:
     bool addLabTestRecord(const LabTestRecord& record) override;
     bool addBloodPressureRecord(const BloodPressureRecord& record) override;
 
+    bool updateVitalsRecord(const VitalsRecord& record) override;
+    bool updateLabTestRecord(const LabTestRecord& record) override;
+    bool updateBloodPressureRecord(const BloodPressureRecord& record) override;
+
+    bool deleteVitalsRecord(const std::string& id) override;
+    bool deleteLabTestRecord(const std::string& id) override;
+    bool deleteBloodPressureRecord(const std::string& id) override;
+
     std::vector<VitalsRecord> getVitalsRecords(
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const override;
@@ -309,6 +317,7 @@ public:
 
     bool saveUserProfile(const UserProfile& profile) override;
     std::optional<UserProfile> getUserProfile() const override;
+    bool deleteUserProfile(const std::string& id) override;
 
     // ---- 风险计算 ----
     double calculateASCVDScore() const override;
@@ -387,6 +396,43 @@ bool HealthManagerImpl::addBloodPressureRecord(const BloodPressureRecord& record
     return dataAccess_->insertRecord("blood_pressure_records", j.dump());
 }
 
+// ---- Update ----
+
+bool HealthManagerImpl::updateVitalsRecord(const VitalsRecord& record) {
+    std::cerr << "[Backend] updateVitalsRecord: id=" << record.id << std::endl;
+    json j = vitalsToJson(record);
+    return dataAccess_->updateRecord("vitals_records", record.id, j.dump());
+}
+
+bool HealthManagerImpl::updateLabTestRecord(const LabTestRecord& record) {
+    std::cerr << "[Backend] updateLabTestRecord: id=" << record.id << std::endl;
+    json j = labTestToJson(record);
+    return dataAccess_->updateRecord("lab_test_records", record.id, j.dump());
+}
+
+bool HealthManagerImpl::updateBloodPressureRecord(const BloodPressureRecord& record) {
+    std::cerr << "[Backend] updateBloodPressureRecord: id=" << record.id << std::endl;
+    json j = bpToJson(record);
+    return dataAccess_->updateRecord("blood_pressure_records", record.id, j.dump());
+}
+
+// ---- Delete ----
+
+bool HealthManagerImpl::deleteVitalsRecord(const std::string& id) {
+    std::cerr << "[Backend] deleteVitalsRecord: id=" << id << std::endl;
+    return dataAccess_->deleteRecord("vitals_records", id);
+}
+
+bool HealthManagerImpl::deleteLabTestRecord(const std::string& id) {
+    std::cerr << "[Backend] deleteLabTestRecord: id=" << id << std::endl;
+    return dataAccess_->deleteRecord("lab_test_records", id);
+}
+
+bool HealthManagerImpl::deleteBloodPressureRecord(const std::string& id) {
+    std::cerr << "[Backend] deleteBloodPressureRecord: id=" << id << std::endl;
+    return dataAccess_->deleteRecord("blood_pressure_records", id);
+}
+
 std::vector<VitalsRecord> HealthManagerImpl::getVitalsRecords(
     std::optional<TimePoint> from,
     std::optional<TimePoint> to) const
@@ -448,7 +494,16 @@ std::vector<LabTestRecord> HealthManagerImpl::getLabTestRecords(
 bool HealthManagerImpl::saveUserProfile(const UserProfile& profile) {
     std::cerr << "[Backend] saveUserProfile: id=" << profile.id << std::endl;
     json j = userProfileToJson(profile);
+    // Upsert: 先尝试更新，不存在则插入
+    if (dataAccess_->updateRecord("user_profile", profile.id, j.dump())) {
+        return true;
+    }
     return dataAccess_->insertRecord("user_profile", j.dump());
+}
+
+bool HealthManagerImpl::deleteUserProfile(const std::string& id) {
+    std::cerr << "[Backend] deleteUserProfile: id=" << id << std::endl;
+    return dataAccess_->deleteRecord("user_profile", id);
 }
 
 std::optional<UserProfile> HealthManagerImpl::getUserProfile() const {
