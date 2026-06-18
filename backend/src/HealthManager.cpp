@@ -270,6 +270,85 @@ static double linearSlope(const std::vector<double>& y) {
 }
 
 // ============================================================
+// 趋势分析 —— 指标定义映射
+// ============================================================
+
+/// @brief 单个量化指标的定义（列名 → 中文名 + 单位）
+struct MetricDef {
+    std::string column;   // 数据库列名
+    std::string label;    // 中文显示名
+    std::string unit;     // 单位
+};
+
+/// @brief 获取指定记录类型的所有量化指标定义
+static std::vector<MetricDef> getMetricDefinitions(HealthRecordType type) {
+    switch (type) {
+        case HealthRecordType::VITALS:
+            return {
+                {"heart_rate",  "心率",   "bpm"},
+                {"steps",       "步数",   "步"},
+                {"sleep_hours", "睡眠",   "小时"},
+                {"weight_kg",   "体重",   "kg"},
+                {"height_cm",   "身高",   "cm"},
+                {"waist_cm",    "腰围",   "cm"}
+            };
+        case HealthRecordType::LAB_TEST:
+            return {
+                {"fasting_glucose",   "空腹血糖",  "mmol/L"},
+                {"total_cholesterol", "总胆固醇",  "mmol/L"},
+                {"ldl_c",             "LDL-C",     "mmol/L"},
+                {"hdl_c",             "HDL-C",     "mmol/L"},
+                {"triglycerides",     "甘油三酯",  "mmol/L"},
+                {"uric_acid",         "血尿酸",    "µmol/L"}
+            };
+        case HealthRecordType::BP:
+            return {
+                {"systolic",  "收缩压", "mmHg"},
+                {"diastolic", "舒张压", "mmHg"}
+            };
+        case HealthRecordType::HISTORY:
+            return {};  // 病历摘要无量化指标
+    }
+    return {};
+}
+
+/// @brief 获取记录类型对应的表名
+static std::string getTableForType(HealthRecordType type) {
+    switch (type) {
+        case HealthRecordType::VITALS:   return "vitals_records";
+        case HealthRecordType::LAB_TEST: return "lab_test_records";
+        case HealthRecordType::BP:       return "blood_pressure_records";
+        case HealthRecordType::HISTORY:  return "";
+    }
+    return "";
+}
+
+/// @brief 获取趋势报告标题
+static std::string getReportTitle(HealthRecordType type) {
+    switch (type) {
+        case HealthRecordType::VITALS:   return "体征指标趋势分析";
+        case HealthRecordType::LAB_TEST: return "临床检验指标趋势分析";
+        case HealthRecordType::BP:       return "血压趋势分析";
+        case HealthRecordType::HISTORY:  return "病历摘要";
+    }
+    return "";
+}
+
+/// @brief 格式化时间范围标签
+static std::string formatPeriodLabel(
+    std::optional<TimePoint> from,
+    std::optional<TimePoint> to)
+{
+    std::string label;
+    if (from) label += timePointToIso(*from).substr(0, 10);
+    else      label += "最早记录";
+    label += " 至 ";
+    if (to) label += timePointToIso(*to).substr(0, 10);
+    else    label += "最新记录";
+    return label;
+}
+
+// ============================================================
 // PIMPL 具体实现类
 // ============================================================
 class HealthManagerImpl : public HealthManager {
@@ -327,6 +406,9 @@ public:
     // ---- 趋势分析 ----
     TrendResult analyzeTrend(HealthRecordType type,
         TimePoint from, TimePoint to) const override;
+    TrendReport analyzeTrendReport(HealthRecordType type,
+        std::optional<TimePoint> from,
+        std::optional<TimePoint> to) const override;
 
     // ---- 统计摘要 ----
     std::string getStatistics(HealthRecordType type) const override;
@@ -714,6 +796,97 @@ TrendResult HealthManagerImpl::analyzeTrend(
     result.slope   = linearSlope(values);
 
     return result;
+}
+
+// ============================================================
+// 趋势分析报告（新版：所有指标 + 数据点 + 统计摘要）
+// ============================================================
+
+TrendReport HealthManagerImpl::analyzeTrendReport(
+    HealthRecordType type,
+    std::optional<TimePoint> from,
+    std::optional<TimePoint> to) const
+{
+    TrendReport report;
+    report.recordType = type;
+    report.title      = getReportTitle(type);
+    report.periodLabel = formatPeriodLabel(from, to);
+
+    // 获取指标定义
+    const auto metricDefs = getMetricDefinitions(type);
+    if (metricDefs.empty()) return report;
+
+    // 获取表名
+    std::string table = getTableForType(type);
+    if (table.empty()) return report;
+
+    // 对每个量化指标查询时序数据
+    for (const auto& def : metricDefs) {
+        // 构建查询: SELECT timestamp, {col} FROM {table}
+        //           WHERE {col} IS NOT NULL [AND timestamp >= from] [AND timestamp <= to]
+        //           ORDER BY timestamp ASC
+        std::ostringstream sql;
+        sql << "SELECT timestamp, " << def.column
+            << " FROM " << table
+            << " WHERE " << def.column << " IS NOT NULL";
+
+        if (from) {
+            sql << " AND timestamp >= '" << timePointToIso(*from) << "'";
+        }
+        if (to) {
+            sql << " AND timestamp <= '" << timePointToIso(*to) << "'";
+        }
+        sql << " ORDER BY timestamp ASC";
+
+        std::string resultJson = dataAccess_->queryRecords(sql.str());
+
+        // 解析结果
+        std::vector<std::pair<std::string, double>> rows; // {timestamp, value}
+        try {
+            json arr = json::parse(resultJson);
+            for (const auto& row : arr) {
+                if (row.contains("timestamp") && row.contains(def.column) &&
+                    !row["timestamp"].is_null() && !row[def.column].is_null()) {
+                    rows.emplace_back(row["timestamp"].get<std::string>(),
+                                      row[def.column].get<double>());
+                }
+            }
+        } catch (const json::parse_error& e) {
+            std::cerr << "[Backend] analyzeTrendReport JSON 解析失败 ("
+                      << def.column << "): " << e.what() << std::endl;
+            continue;
+        }
+
+        // 跳过无数据的指标
+        if (rows.empty()) continue;
+
+        // 构建 MetricTrend
+        MetricTrend mt;
+        mt.metricName = def.label;
+        mt.metricKey  = def.column;
+        mt.unit       = def.unit;
+        mt.count      = static_cast<int>(rows.size());
+
+        std::vector<double> values;
+        for (const auto& [ts, val] : rows) {
+            mt.dataPoints.push_back({ts, val});
+            values.push_back(val);
+        }
+
+        // 统计摘要
+        mt.average = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
+        mt.min     = *std::min_element(values.begin(), values.end());
+        mt.max     = *std::max_element(values.begin(), values.end());
+        mt.median  = median(values);
+        mt.slope   = linearSlope(values);
+
+        report.metrics.push_back(std::move(mt));
+    }
+
+    std::cerr << "[Backend] analyzeTrendReport: " << report.title
+              << " — " << report.metrics.size() << " 个指标" << std::endl;
+
+    return report;
 }
 
 // ============================================================
