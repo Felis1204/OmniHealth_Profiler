@@ -1,11 +1,11 @@
 #include "HealthManager.h"
 #include "DataAccess.h"
 #include "ASCVDCalculator.h"
+#include "PlatformCompat.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -26,7 +26,7 @@ namespace health {
 static std::string timePointToIso(TimePoint tp) {
     auto t = std::chrono::system_clock::to_time_t(tp);
     std::tm tm = {};
-    gmtime_r(&t, &tm);
+    health::platform::gmtimeCompat(&t, &tm);
     std::ostringstream oss;
     oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
     return oss.str();
@@ -39,7 +39,7 @@ static TimePoint isoToTimePoint(const std::string& iso) {
     if (ss.fail()) {
         return TimePoint{};
     }
-    auto t = std::mktime(&tm);
+    auto t = health::platform::timegmCompat(&tm);
     return std::chrono::system_clock::from_time_t(t);
 }
 
@@ -229,7 +229,7 @@ static int calculateAge(const std::optional<std::string>& birthDate) {
         if (ss2.fail()) return 0;
     }
 
-    auto birthTime = std::chrono::system_clock::from_time_t(std::mktime(&tm));
+    auto birthTime = std::chrono::system_clock::from_time_t(health::platform::timegmCompat(&tm));
     auto now = std::chrono::system_clock::now();
     auto hours = std::chrono::duration_cast<std::chrono::hours>(now - birthTime).count();
     return static_cast<int>(hours / (365.25 * 24.0));

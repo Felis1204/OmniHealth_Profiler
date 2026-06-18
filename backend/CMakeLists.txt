@@ -3,9 +3,9 @@
 # 将后端编译为静态库 (health_backend)
 #
 # 外部依赖：
-#   - SQLite3       (本地健康数据持久化存储) —— 已集成 (Homebrew)
+#   - SQLite3       (本地健康数据持久化存储) —— 跨平台自动查找
 #   - cpp-httplib   (连接大模型 API，实现生成式健康报告) —— TODO
-#   - nlohmann/json (JSON 解析，用于 API 请求/响应) —— TODO
+#   - nlohmann/json (JSON 解析，用于 API 请求/响应) —— 已集成
 # ============================================================
 
 # ---- 外部依赖 ----
@@ -18,8 +18,24 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# SQLite3 (Homebrew keg-only，需指定路径)
-list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/sqlite")
+# SQLite3 —— 跨平台查找策略
+# macOS Homebrew (Apple Silicon: /opt/homebrew, Intel: /usr/local)
+if(APPLE)
+    foreach(HOMEBREW_PREFIX "/opt/homebrew/opt/sqlite" "/usr/local/opt/sqlite")
+        if(EXISTS "${HOMEBREW_PREFIX}")
+            list(APPEND CMAKE_PREFIX_PATH "${HOMEBREW_PREFIX}")
+        endif()
+    endforeach()
+elseif(WIN32)
+    # vcpkg 用户: CMAKE_TOOLCHAIN_FILE 自动处理 SQLite3 查找，无需额外配置
+    # MinGW/MSYS2 用户: pacman -S mingw-w64-x86_64-sqlite3 安装后 CMake 自动发现
+    # 其他用户: 安装 SQLite3 后通过 -DCMAKE_PREFIX_PATH=<path> 指定
+    if(DEFINED ENV{VCPKG_ROOT})
+        message(STATUS "vcpkg detected, SQLite3 will be found via vcpkg toolchain")
+    else()
+        message(STATUS "Windows: ensure SQLite3 is installed. Install via vcpkg or MSYS2.")
+    endif()
+endif()
 find_package(SQLite3 REQUIRED)
 
 # 搜集源文件（排除测试文件 test_compile.cpp）

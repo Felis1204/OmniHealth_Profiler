@@ -5,6 +5,14 @@
 # ============================================================
 
 # 查找 Qt6 组件
+# Windows 用户: 如果 Qt6 未自动发现，请指定 CMAKE_PREFIX_PATH
+#   例如: cmake -B build -DCMAKE_PREFIX_PATH=C:/Qt/6.11.1/mingw_1310_64
+# macOS 用户 (Homebrew): CMake 会自动发现 /opt/homebrew 下的 Qt6
+if(WIN32)
+    message(STATUS "Windows: if Qt6 is not found, pass "
+                    "-DCMAKE_PREFIX_PATH=<Qt-install-path> to CMake "
+                    "(e.g. C:/Qt/6.11.1/mingw_1310_64)")
+endif()
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 # 启用 Qt 的自动 MOC / UIC 处理

@@ -5,7 +5,7 @@
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
-    , manager_(CreateHealthManager())
+    , manager_(health::createHealthManager())
 {
     ui->setupUi(this);
 }

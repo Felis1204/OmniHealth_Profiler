@@ -21,12 +21,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ---- 编译器警告 ----
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|AppleClang|GNU")
     add_compile_options(-Wall -Wextra -Wpedantic)
+elseif(MSVC)
+    # /W4        — 高等级警告（等效 -Wall -Wextra）
+    # /permissive- — 标准符合性模式
+    add_compile_options(/W4 /permissive-)
 endif()
 
-# 将 backend/include 加入全局头文件搜索路径，
-# 使 frontend 也能通过 #include "HealthManager.h" 找到契约头文件
-include_directories(${CMAKE_SOURCE_DIR}/backend/include)
+# backend 的 PUBLIC include 目录已通过 target_link_libraries 传播到前端，
+# 不再需要全局 include_directories
 
 # ---- 子目录 ----
 add_subdirectory(backend)
 add_subdirectory(frontend)
+
+# ---- 测试（默认关闭）----
+option(BUILD_TESTING "Build the test suite" OFF)
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
