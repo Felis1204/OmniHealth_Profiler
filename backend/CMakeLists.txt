@@ -72,21 +72,22 @@ target_include_directories(health_backend
 
 # 链接 SQLite3
 # SQLite3 的 CMake 目标名因包管理器而异：
-#   - 标准 FindSQLite3 模块 (CMake 3.14+) → SQLite::SQLite3
-#   - vcpkg 的 sqlite3 端口                → unofficial::sqlite3::sqlite3
-# 这里采用兼容策略：优先使用已知目标，若都不存在则手动创建
-if(TARGET SQLite::SQLite3)
-    target_link_libraries(health_backend PUBLIC SQLite::SQLite3 nlohmann_json::nlohmann_json)
-elseif(TARGET SQLite3::SQLite3)
+#   - 标准 FindSQLite3 模块 (CMake 3.14+) → SQLite3::SQLite3（推荐）
+#   - 旧版 FindSQLite3 / vcpkg           → SQLite::SQLite3（deprecated 别名）
+#   - vcpkg 的 sqlite3 端口              → unofficial::sqlite3::sqlite3
+# 这里采用兼容策略：优先使用推荐目标，若都不存在则手动创建
+if(TARGET SQLite3::SQLite3)
     target_link_libraries(health_backend PUBLIC SQLite3::SQLite3 nlohmann_json::nlohmann_json)
+elseif(TARGET SQLite::SQLite3)
+    target_link_libraries(health_backend PUBLIC SQLite::SQLite3 nlohmann_json::nlohmann_json)
 else()
     # 手动创建 IMPORTED 目标（降级方案）
-    add_library(SQLite::SQLite3 UNKNOWN IMPORTED)
-    set_target_properties(SQLite::SQLite3 PROPERTIES
+    add_library(SQLite3::SQLite3 UNKNOWN IMPORTED)
+    set_target_properties(SQLite3::SQLite3 PROPERTIES
         IMPORTED_LOCATION "${SQLite3_LIBRARY}"
         INTERFACE_INCLUDE_DIRECTORIES "${SQLite3_INCLUDE_DIR}"
     )
-    target_link_libraries(health_backend PUBLIC SQLite::SQLite3 nlohmann_json::nlohmann_json)
+    target_link_libraries(health_backend PUBLIC SQLite3::SQLite3 nlohmann_json::nlohmann_json)
 endif()
 
 # 要求 C++17
