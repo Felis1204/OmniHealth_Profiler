@@ -413,8 +413,11 @@ public:
     // ---- 统计摘要 ----
     std::string getStatistics(HealthRecordType type) const override;
 
-    // ---- LLM 咨询 ----
+    // ---- 健康报告 ----
     std::string generateHealthReport() const override;
+    std::string generateHealthReport(ReportPeriod period) const override;
+
+    // ---- LLM 咨询 ----
     std::string askHealthAdvisor(const std::string& userQuery) const override;
 
 private:
@@ -1026,6 +1029,154 @@ std::string HealthManagerImpl::generateHealthReport() const {
 
     oss << "\n[提示] 接入 LLM 服务后将提供 AI 驱动的个性化解读。\n";
     oss << "============================================================\n";
+    return oss.str();
+}
+
+// ============================================================
+// 周期性健康报告（周报/月报 — 基于时段均值）
+// ============================================================
+
+std::string HealthManagerImpl::generateHealthReport(ReportPeriod period) const {
+    using namespace std::chrono;
+    auto now = system_clock::now();
+    int days = (period == ReportPeriod::WEEKLY) ? 7 : 30;
+    auto from = now - hours(24 * days);
+
+    const char* periodLabel = (period == ReportPeriod::WEEKLY) ? "周报" : "月报";
+
+    std::ostringstream oss;
+    oss << "==================== 健康数字孪生报告 ("
+        << periodLabel << ") ====================\n\n";
+    oss << "报告周期: 近 " << days << " 天 ("
+        << timePointToIso(from).substr(0, 10)
+        << " 至 " << timePointToIso(now).substr(0, 10) << ")\n\n";
+
+    // ---- 查询时段内各类型记录 ----
+    auto vitals = getVitalsRecords(from, now);
+    auto bps    = getBloodPressureRecords(from, now);
+    auto labs   = getLabTestRecords(from, now);
+
+    // ---- 辅助 lambda：从记录列表中提取可选数值 ----
+    auto avgOptDouble = [](const auto& records, auto accessor) -> std::optional<double> {
+        double sum = 0.0;
+        int count = 0;
+        for (const auto& r : records) {
+            auto val = accessor(r);
+            if (val) { sum += *val; ++count; }
+        }
+        return count > 0 ? std::optional<double>(sum / count) : std::nullopt;
+    };
+
+    auto avgOptInt = [](const auto& records, auto accessor) -> std::optional<double> {
+        double sum = 0.0;
+        int count = 0;
+        for (const auto& r : records) {
+            auto val = accessor(r);
+            if (val) { sum += static_cast<double>(*val); ++count; }
+        }
+        return count > 0 ? std::optional<double>(sum / count) : std::nullopt;
+    };
+
+    // ---- 1. 数据概览 ----
+    oss << "【数据概览】\n";
+    oss << "  - 体征记录: " << vitals.size() << " 条\n";
+    oss << "  - 临床检验: " << labs.size()   << " 条\n";
+    oss << "  - 血压记录: " << bps.size()    << " 条\n";
+
+    if (vitals.empty() && bps.empty() && labs.empty()) {
+        oss << "\n该时段内暂无数据。\n";
+        oss << "============================================================\n";
+        return oss.str();
+    }
+
+    // ---- 2. 体征指标时段均值 ----
+    if (!vitals.empty()) {
+        oss << "\n【体征指标 — " << days << " 日均值】\n";
+
+        auto avgHR = avgOptInt(vitals, [](const VitalsRecord& r) { return r.heartRate; });
+        auto avgSteps = avgOptInt(vitals, [](const VitalsRecord& r) { return r.steps; });
+        auto avgSleep = avgOptDouble(vitals, [](const VitalsRecord& r) { return r.sleepHours; });
+        auto avgWeight = avgOptDouble(vitals, [](const VitalsRecord& r) { return r.weightKg; });
+
+        if (avgHR)    oss << "  心率:     " << std::fixed << std::setprecision(0) << *avgHR    << " bpm\n";
+        if (avgSteps) oss << "  步数:     " << std::fixed << std::setprecision(0) << *avgSteps << " 步/日\n";
+        if (avgSleep) oss << "  睡眠:     " << std::fixed << std::setprecision(1) << *avgSleep << " 小时/日\n";
+        if (avgWeight)oss << "  体重:     " << std::fixed << std::setprecision(1) << *avgWeight << " kg\n";
+
+        // 最新腰围（非均值，腰围变化缓慢）
+        for (auto it = vitals.rbegin(); it != vitals.rend(); ++it) {
+            if (it->waistCm) {
+                oss << "  腰围:     " << std::fixed << std::setprecision(1) << *it->waistCm << " cm (最新)\n";
+                break;
+            }
+        }
+
+        if (!avgHR && !avgSteps && !avgSleep && !avgWeight) {
+            oss << "  (无量化指标数据)\n";
+        }
+    }
+
+    // ---- 3. 血压时段均值 ----
+    if (!bps.empty()) {
+        oss << "\n【血压指标 — " << days << " 日均值】\n";
+
+        auto avgSys = avgOptInt(bps, [](const BloodPressureRecord& r) { return r.systolic; });
+        auto avgDia = avgOptInt(bps, [](const BloodPressureRecord& r) { return r.diastolic; });
+
+        if (avgSys && avgDia) {
+            oss << "  收缩压:   " << std::fixed << std::setprecision(0) << *avgSys << " mmHg\n";
+            oss << "  舒张压:   " << std::fixed << std::setprecision(0) << *avgDia << " mmHg\n";
+            oss << "  测量次数: " << bps.size() << "\n";
+        } else {
+            oss << "  (无有效血压数据)\n";
+        }
+    }
+
+    // ---- 4. 临床检验（时段内最新值）----
+    if (!labs.empty()) {
+        oss << "\n【临床检验 — 时段内最新值】\n";
+        const auto& latest = labs.back();
+        oss << "  采样时间: " << timePointToIso(latest.timestamp).substr(0, 10) << "\n";
+        if (latest.fastingGlucose)   oss << "  空腹血糖:   " << std::fixed << std::setprecision(1) << *latest.fastingGlucose   << " mmol/L\n";
+        if (latest.totalCholesterol) oss << "  总胆固醇:   " << std::fixed << std::setprecision(1) << *latest.totalCholesterol << " mmol/L\n";
+        if (latest.hdlC)             oss << "  HDL-C:      " << std::fixed << std::setprecision(2) << *latest.hdlC << " mmol/L\n";
+        if (latest.ldlC)             oss << "  LDL-C:      " << std::fixed << std::setprecision(2) << *latest.ldlC << " mmol/L\n";
+        if (latest.triglycerides)    oss << "  甘油三酯:   " << std::fixed << std::setprecision(1) << *latest.triglycerides << " mmol/L\n";
+        if (latest.uricAcid)         oss << "  血尿酸:     " << std::fixed << std::setprecision(0) << *latest.uricAcid << " µmol/L\n";
+    }
+
+    // ---- 5. BMI ----
+    double bmi = calculateBMI();
+    if (bmi > 0.0) {
+        oss << "\n【身体质量指数】\n";
+        oss << "  BMI: " << std::fixed << std::setprecision(1) << bmi
+            << " (" << getBMICategory() << ")\n";
+    }
+
+    // ---- 6. ASCVD (China-PAR) ----
+    double ascvd = calculateASCVDScore();
+    if (ascvd > 0.0) {
+        std::string category = ASCVDCalculator::getRiskCategory(ascvd);
+        oss << "\n【心血管风险 (China-PAR)】\n";
+        oss << "  10年 ASCVD 风险: " << std::fixed << std::setprecision(1)
+            << ascvd << "% — " << category << "\n";
+    }
+
+    // ---- 7. 趋势概览 ----
+    oss << "\n【趋势概览】\n";
+    for (auto recType : {HealthRecordType::BP, HealthRecordType::VITALS}) {
+        auto report = analyzeTrendReport(recType, from, now);
+        for (const auto& mt : report.metrics) {
+            const char* direction = (mt.slope > 0.05)  ? "↑" :
+                                     (mt.slope < -0.05) ? "↓" : "→";
+            oss << "  " << mt.metricName << ": "
+                << std::fixed << std::setprecision(1) << mt.average
+                << " " << mt.unit << " " << direction
+                << " (" << mt.count << "次)\n";
+        }
+    }
+
+    oss << "\n============================================================\n";
     return oss.str();
 }
 

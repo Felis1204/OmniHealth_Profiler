@@ -152,10 +152,30 @@ public:
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const = 0;
 
-    // ---- LLM 咨询 ----
+    // ---- 健康报告 ----
 
-    /// @brief 生成健康分析报告
+    /// @brief 报告周期类型
+    enum class ReportPeriod {
+        WEEKLY,   // 近 7 天
+        MONTHLY   // 近 30 天
+    };
+
+    /// @brief 生成健康快照（最新单点数据，兼容旧版前端）
     virtual std::string generateHealthReport() const = 0;
+
+    /// @brief 生成周期性健康报告（基于时段内均值）
+    /// @param period WEEKLY（近7天均值）或 MONTHLY（近30天均值）
+    /// @return 格式化报告文本，含各指标均值 + BMI + ASCVD
+    ///
+    /// 报告内容：
+    ///   - 心率、步数、睡眠、体重 → 时段均值
+    ///   - 血压（收缩压/舒张压）→ 时段均值
+    ///   - 血糖、血脂 → 时段内最新值（检验频率低，均值无意义）
+    ///   - BMI → 基于最新体重/身高
+    ///   - ASCVD → China-PAR 算法（已自动聚合近期数据）
+    virtual std::string generateHealthReport(ReportPeriod period) const = 0;
+
+    // ---- LLM 咨询 ----
 
     /// @brief 获取指定类型的统计摘要
     /// @param type 健康记录类型
