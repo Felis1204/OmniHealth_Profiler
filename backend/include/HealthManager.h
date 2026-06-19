@@ -11,6 +11,7 @@
 #include "Models/BloodPressureRecord.h"
 #include "Models/MedicalHistoryRecord.h"
 #include "Models/UserProfile.h"
+#include "MetabolicCalculator.h"
 
 namespace health {
 
@@ -144,6 +145,14 @@ public:
 
     /// @brief 获取 BMI 分级描述
     virtual std::string getBMICategory() const = 0;
+
+    /// @brief 计算 TyG 指数（甘油三酯-葡萄糖指数，筛查胰岛素抵抗）
+    /// @return 含评分值和风险定性的评估结果
+    virtual MetabolicResult calculateTyGIndex() const = 0;
+
+    /// @brief 计算 CDRS（中国糖尿病风险评分，筛查隐匿性糖尿病）
+    /// @return 含评分值和风险定性的评估结果
+    virtual MetabolicResult calculateCDRS() const = 0;
 
     // ---- 趋势分析 ----
 

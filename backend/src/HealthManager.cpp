@@ -447,6 +447,8 @@ public:
     double calculateASCVDScore() const override;
     double calculateBMI() const override;
     std::string getBMICategory() const override;
+    MetabolicResult calculateTyGIndex() const override;
+    MetabolicResult calculateCDRS() const override;
 
     // ---- 趋势分析 ----
     TrendResult analyzeTrend(HealthRecordType type,
@@ -745,6 +747,93 @@ std::string HealthManagerImpl::getBMICategory() const {
     if (bmi < 24.0)  return "正常";
     if (bmi < 28.0)  return "超重";
     return "肥胖";
+}
+
+// ============================================================
+// TyG Index — 胰岛素抵抗筛查
+// ============================================================
+
+MetabolicResult HealthManagerImpl::calculateTyGIndex() const {
+    MetabolicResult result;
+    result.score = 0.0;
+    result.riskLevel = "无法评估（缺少检验数据）";
+
+    auto labs = getLabTestRecords(std::nullopt, std::nullopt);
+    if (labs.empty()) {
+        std::cerr << "[Backend] TyG: 缺少临床检验数据" << std::endl;
+        return result;
+    }
+
+    const auto& latest = labs.back();
+    if (!latest.fastingGlucose || !latest.triglycerides) {
+        std::cerr << "[Backend] TyG: 缺少空腹血糖或甘油三酯数据" << std::endl;
+        return result;
+    }
+
+    TyGParams params;
+    params.fastingGlucose = *latest.fastingGlucose;
+    params.triglycerides  = *latest.triglycerides;
+
+    return MetabolicCalculator::calculateTyGIndex(params);
+}
+
+// ============================================================
+// CDRS — 中国糖尿病风险评分
+// ============================================================
+
+MetabolicResult HealthManagerImpl::calculateCDRS() const {
+    MetabolicResult result;
+    result.score = 0.0;
+    result.riskLevel = "无法评估（缺少用户档案或体征数据）";
+
+    auto profileOpt = getUserProfile();
+    if (!profileOpt) {
+        std::cerr << "[Backend] CDRS: 缺少用户档案" << std::endl;
+        return result;
+    }
+    const auto& p = *profileOpt;
+
+    // 年龄
+    int age = 0;
+    if (p.birthDate && !p.birthDate->empty()) {
+        std::tm tm = {};
+        std::istringstream ss(*p.birthDate);
+        ss >> std::get_time(&tm, "%Y-%m-%d");
+        if (!ss.fail()) {
+            auto birthTime = std::chrono::system_clock::from_time_t(
+                platform::timegmCompat(&tm));
+            auto now = std::chrono::system_clock::now();
+            auto hours = std::chrono::duration_cast<std::chrono::hours>(
+                now - birthTime).count();
+            age = static_cast<int>(hours / (365.25 * 24.0));
+        }
+    }
+
+    // 性别
+    bool isMale = (p.gender && *p.gender == "MALE");
+
+    // 腰围（最新）
+    double waist = 0.0;
+    auto vitals = getVitalsRecords(std::nullopt, std::nullopt);
+    for (auto it = vitals.rbegin(); it != vitals.rend(); ++it) {
+        if (it->waistCm) { waist = *it->waistCm; break; }
+    }
+
+    // 家族史
+    bool hasFamilyHistory = (p.familyHistoryASCVD && *p.familyHistoryASCVD);
+
+    if (age <= 0 || waist <= 0.0) {
+        std::cerr << "[Backend] CDRS: 缺少年龄或腰围数据" << std::endl;
+        return result;
+    }
+
+    CDRSParams params;
+    params.age              = age;
+    params.isMale           = isMale;
+    params.waistCm          = waist;
+    params.hasFamilyHistory = hasFamilyHistory;
+
+    return MetabolicCalculator::calculateCDRS(params);
 }
 
 double HealthManagerImpl::calculateASCVDScore() const {
@@ -1314,6 +1403,10 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
         }
     }
 
+    // TyG + CDRS（注入 AI 上下文）
+    auto tygResult = calculateTyGIndex();
+    auto cdrsResult = calculateCDRS();
+
     // 组装 Prompt
     std::string systemPrompt = LLMService::buildSystemPrompt(periodLabel);
 
@@ -1323,6 +1416,17 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
             *profileOpt, vitals, bps, labs, medicalHistory,
             bmi, bmiCategory, ascvd, ascvdCategory,
             trendSummary.str(), days, periodLabel);
+
+        // 注入内分泌代谢评估结果
+        std::ostringstream metabolicSection;
+        metabolicSection << "\n## 内分泌代谢专项评估\n";
+        metabolicSection << "- TyG 指数（胰岛素抵抗筛查）："
+                         << std::fixed << std::setprecision(2)
+                         << tygResult.score << " — " << tygResult.riskLevel << "\n";
+        metabolicSection << "- CDRS（中国糖尿病风险评分）："
+                         << static_cast<int>(cdrsResult.score)
+                         << " 分 — " << cdrsResult.riskLevel << "\n";
+        userPrompt += metabolicSection.str();
     } else {
         // 无用户档案时的降级 Prompt
         std::ostringstream fallback;
