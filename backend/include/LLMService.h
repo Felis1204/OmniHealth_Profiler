@@ -5,6 +5,7 @@
 #include "Models/VitalsRecord.h"
 #include "Models/LabTestRecord.h"
 #include "Models/BloodPressureRecord.h"
+#include "Models/MedicalHistoryRecord.h"
 #include "Models/UserProfile.h"
 
 namespace health {
@@ -42,6 +43,7 @@ public:
     /// @param vitals       时段内体征记录
     /// @param bps          时段内血压记录
     /// @param labs         全部检验记录（取最新值）
+    /// @param medicalHistory 病历摘要记录（用于个性化分析）
     /// @param bmi          BMI 值
     /// @param bmiCategory  BMI 分级描述
     /// @param ascvd        ASCVD 10年风险值
@@ -55,6 +57,7 @@ public:
         const std::vector<VitalsRecord>& vitals,
         const std::vector<BloodPressureRecord>& bps,
         const std::vector<LabTestRecord>& labs,
+        const std::vector<MedicalHistoryRecord>& medicalHistory,
         double bmi, const std::string& bmiCategory,
         double ascvd, const std::string& ascvdCategory,
         const std::string& trendSummary,

@@ -172,6 +172,32 @@ static BloodPressureRecord jsonToBp(const json& j) {
 }
 
 // ============================================================
+// MedicalHistoryRecord 序列化
+// ============================================================
+
+static json medicalHistoryToJson(const MedicalHistoryRecord& r) {
+    json j;
+    j["id"]        = r.id;
+    j["timestamp"] = timePointToIso(r.timestamp);
+    j["category"]  = r.category;
+    j["content"]   = r.content;
+    if (r.note)    j["note"] = *r.note;
+    return j;
+}
+
+static MedicalHistoryRecord jsonToMedicalHistory(const json& j) {
+    MedicalHistoryRecord r;
+    r.id         = j.value("id", "");
+    r.recordType = HealthRecordType::HISTORY;
+    r.timestamp  = isoToTimePoint(j.value("timestamp", ""));
+    r.category   = j.value("category", "");
+    r.content    = j.value("content", "");
+    if (j.contains("note") && !j["note"].is_null())
+        r.note = j["note"].get<std::string>();
+    return r;
+}
+
+// ============================================================
 // UserProfile 序列化
 // ============================================================
 
@@ -396,6 +422,11 @@ public:
     bool deleteLabTestRecord(const std::string& id) override;
     bool deleteBloodPressureRecord(const std::string& id) override;
 
+    bool addMedicalHistoryRecord(const MedicalHistoryRecord& record) override;
+    bool updateMedicalHistoryRecord(const MedicalHistoryRecord& record) override;
+    bool deleteMedicalHistoryRecord(const std::string& id) override;
+    std::vector<MedicalHistoryRecord> getMedicalHistoryRecords() const override;
+
     std::vector<VitalsRecord> getVitalsRecords(
         std::optional<TimePoint> from,
         std::optional<TimePoint> to) const override;
@@ -536,6 +567,43 @@ bool HealthManagerImpl::deleteLabTestRecord(const std::string& id) {
 bool HealthManagerImpl::deleteBloodPressureRecord(const std::string& id) {
     std::cerr << "[Backend] deleteBloodPressureRecord: id=" << id << std::endl;
     return dataAccess_->deleteRecord("blood_pressure_records", id);
+}
+
+// ---- MedicalHistory CRUD ----
+
+bool HealthManagerImpl::addMedicalHistoryRecord(const MedicalHistoryRecord& record) {
+    std::cerr << "[Backend] addMedicalHistoryRecord: id=" << record.id
+              << " category=" << record.category << std::endl;
+    json j = medicalHistoryToJson(record);
+    return dataAccess_->insertRecord("medical_history_records", j.dump());
+}
+
+bool HealthManagerImpl::updateMedicalHistoryRecord(const MedicalHistoryRecord& record) {
+    std::cerr << "[Backend] updateMedicalHistoryRecord: id=" << record.id << std::endl;
+    json j = medicalHistoryToJson(record);
+    return dataAccess_->updateRecord("medical_history_records", record.id, j.dump());
+}
+
+bool HealthManagerImpl::deleteMedicalHistoryRecord(const std::string& id) {
+    std::cerr << "[Backend] deleteMedicalHistoryRecord: id=" << id << std::endl;
+    return dataAccess_->deleteRecord("medical_history_records", id);
+}
+
+std::vector<MedicalHistoryRecord> HealthManagerImpl::getMedicalHistoryRecords() const {
+    std::string sql = "SELECT * FROM medical_history_records ORDER BY timestamp DESC";
+    std::string resultJson = dataAccess_->queryRecords(sql);
+
+    std::vector<MedicalHistoryRecord> records;
+    try {
+        json arr = json::parse(resultJson);
+        for (const auto& j : arr) {
+            records.push_back(jsonToMedicalHistory(j));
+        }
+    } catch (const json::parse_error& e) {
+        std::cerr << "[Backend] getMedicalHistoryRecords JSON 解析失败: "
+                  << e.what() << std::endl;
+    }
+    return records;
 }
 
 std::vector<VitalsRecord> HealthManagerImpl::getVitalsRecords(
@@ -1229,6 +1297,9 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
     double ascvd = calculateASCVDScore();
     std::string ascvdCategory = ASCVDCalculator::getRiskCategory(ascvd);
 
+    // 病历摘要（全部，不限时间范围）
+    auto medicalHistory = getMedicalHistoryRecords();
+
     // 趋势摘要
     std::ostringstream trendSummary;
     for (auto recType : {HealthRecordType::BP, HealthRecordType::VITALS}) {
@@ -1249,7 +1320,7 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
     std::string userPrompt;
     if (profileOpt) {
         userPrompt = LLMService::buildHealthContextPrompt(
-            *profileOpt, vitals, bps, labs,
+            *profileOpt, vitals, bps, labs, medicalHistory,
             bmi, bmiCategory, ascvd, ascvdCategory,
             trendSummary.str(), days, periodLabel);
     } else {

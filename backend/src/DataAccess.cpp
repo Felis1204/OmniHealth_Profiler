@@ -22,7 +22,8 @@ static const std::vector<std::string>& getAllowedTables() {
         "user_profile",
         "vitals_records",
         "lab_test_records",
-        "blood_pressure_records"
+        "blood_pressure_records",
+        "medical_history_records"
     };
     return tables;
 }
@@ -46,11 +47,15 @@ static const std::vector<std::string>& getTableColumns(const std::string& table)
     static const std::vector<std::string> bpCols = {
         "id", "user_id", "timestamp", "systolic", "diastolic", "note"
     };
+    static const std::vector<std::string> medicalHistoryCols = {
+        "id", "user_id", "timestamp", "category", "content", "note"
+    };
 
-    if (table == "user_profile")            return userProfileCols;
-    if (table == "vitals_records")          return vitalsCols;
-    if (table == "lab_test_records")        return labTestCols;
-    if (table == "blood_pressure_records")  return bpCols;
+    if (table == "user_profile")              return userProfileCols;
+    if (table == "vitals_records")            return vitalsCols;
+    if (table == "lab_test_records")          return labTestCols;
+    if (table == "blood_pressure_records")    return bpCols;
+    if (table == "medical_history_records")   return medicalHistoryCols;
 
     static const std::vector<std::string> empty;
     return empty;
@@ -149,12 +154,24 @@ bool DataAccessImpl::createSchema() {
             FOREIGN KEY (user_id) REFERENCES user_profile(id)
         );
 
+        CREATE TABLE IF NOT EXISTS medical_history_records (
+            id TEXT PRIMARY KEY,
+            user_id TEXT,
+            timestamp TEXT NOT NULL,
+            category TEXT,
+            content TEXT,
+            note TEXT,
+            FOREIGN KEY (user_id) REFERENCES user_profile(id)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_vitals_timestamp
             ON vitals_records(timestamp);
         CREATE INDEX IF NOT EXISTS idx_lab_timestamp
             ON lab_test_records(timestamp);
         CREATE INDEX IF NOT EXISTS idx_bp_timestamp
             ON blood_pressure_records(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_medical_history_timestamp
+            ON medical_history_records(timestamp);
     )SQL";
 
     char* errMsg = nullptr;

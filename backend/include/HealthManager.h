@@ -9,6 +9,7 @@
 #include "Models/VitalsRecord.h"
 #include "Models/LabTestRecord.h"
 #include "Models/BloodPressureRecord.h"
+#include "Models/MedicalHistoryRecord.h"
 #include "Models/UserProfile.h"
 
 namespace health {
@@ -93,6 +94,18 @@ public:
 
     /// @brief 删除血压记录
     virtual bool deleteBloodPressureRecord(const std::string& id) = 0;
+
+    /// @brief 添加病历摘要记录
+    virtual bool addMedicalHistoryRecord(const MedicalHistoryRecord& record) = 0;
+
+    /// @brief 更新病历摘要记录
+    virtual bool updateMedicalHistoryRecord(const MedicalHistoryRecord& record) = 0;
+
+    /// @brief 删除病历摘要记录
+    virtual bool deleteMedicalHistoryRecord(const std::string& id) = 0;
+
+    /// @brief 获取所有病历摘要记录（按时间降序）
+    virtual std::vector<MedicalHistoryRecord> getMedicalHistoryRecords() const = 0;
 
     /// @brief 按时间范围获取体征记录
     /// @param from 起始时间（nullopt 表示无下限）

@@ -358,6 +358,7 @@ std::string LLMService::buildHealthContextPrompt(
     const std::vector<VitalsRecord>& vitals,
     const std::vector<BloodPressureRecord>& bps,
     const std::vector<LabTestRecord>& labs,
+    const std::vector<MedicalHistoryRecord>& medicalHistory,
     double bmi, const std::string& bmiCategory,
     double ascvd, const std::string& ascvdCategory,
     const std::string& trendSummary,
@@ -451,6 +452,15 @@ std::string LLMService::buildHealthContextPrompt(
         << "（" << translateUrban(profile.urbanRural) << "）\n";
     oss << "- 早发 ASCVD 家族史："
         << ((profile.familyHistoryASCVD && *profile.familyHistoryASCVD) ? "有" : "无") << "\n";
+
+    // 病历摘要（脱敏，只传分类和内容，不传时间戳和ID）
+    if (!medicalHistory.empty()) {
+        oss << "\n## 用户既往病历摘要\n";
+        oss << "以下信息来自用户手动录入，请在给出任何饮食、运动、用药建议前务必参考：\n\n";
+        for (const auto& mh : medicalHistory) {
+            oss << "【" << mh.category << "】" << mh.content << "\n";
+        }
+    }
 
     // 体征均值
     oss << "\n## 近 " << days << " 天体徵均值（" << periodLabel << "）\n";
