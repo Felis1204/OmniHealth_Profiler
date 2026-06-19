@@ -206,12 +206,14 @@ std::string LLMServiceImpl::sendRequest(const std::string& systemPrompt,
     auto res = cli.Post(path, headers, bodyStr, "application/json");
 
     if (!res) {
-        auto err = cli.get_openssl_verify_result();
         std::cerr << "[LLMService] HTTP 请求失败: "
                   << httplib::to_string(res.error()) << std::endl;
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+        auto err = cli.get_openssl_verify_result();
         if (err != 0) {
             std::cerr << "[LLMService] SSL 验证错误码: " << err << std::endl;
         }
+#endif
         return R"({"error": "网络请求失败，无法连接 AI 服务。请检查网络连接。"})";
     }
 

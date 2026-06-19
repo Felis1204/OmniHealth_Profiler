@@ -19,8 +19,9 @@ public:
 
 private slots:
     void on_pushButton_clicked();
-
     void on_AddDataButton_clicked();
+    void on_AddDataButton_2_clicked();
+    void on_usermanagebutton_clicked();
 
 private:
     Ui::Widget *ui;

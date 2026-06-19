@@ -27,18 +27,36 @@ set(FRONTEND_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AddData.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/bpredialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/datamanage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/labtestredialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/mhredialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/usermanage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/vitalredialog.cpp
 )
 
 # 显式列出头文件（包含 Q_OBJECT 的头文件必须在此，AUTOMOC 才能处理）
 set(FRONTEND_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/widget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/AddData.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/bpredialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/datamanage.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/labtestredialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/mhredialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/usermanage.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/vitalredialog.h
 )
 
 # 显式列出 UI 设计文件
 set(FRONTEND_FORMS
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/widget.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/AddData.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/bpredialog.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/datamanage.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/labtestredialog.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/mhredialog.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/usermanage.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/vitalredialog.ui
 )
 
 # 编译为可执行文件

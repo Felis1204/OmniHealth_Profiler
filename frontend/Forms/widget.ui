@@ -16,8 +16,8 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>300</y>
+     <x>490</x>
+     <y>310</y>
      <width>131</width>
      <height>61</height>
     </rect>
@@ -29,25 +29,64 @@
   <widget class="QTextBrowser" name="textBrowser">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>420</x>
      <y>60</y>
      <width>256</width>
      <height>192</height>
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="AddDataButton">
+  <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>110</x>
-     <y>450</y>
-     <width>91</width>
-     <height>41</height>
+     <x>40</x>
+     <y>50</y>
+     <width>191</width>
+     <height>251</height>
     </rect>
    </property>
-   <property name="text">
-    <string>新增档案</string>
+   <property name="title">
+    <string>个人档案</string>
    </property>
+   <widget class="QPushButton" name="AddDataButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>110</y>
+      <width>91</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>新增档案</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="AddDataButton_2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>180</y>
+      <width>91</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>档案管理</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="usermanagebutton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>40</y>
+      <width>91</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>用户管理</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
