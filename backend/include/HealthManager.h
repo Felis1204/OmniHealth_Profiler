@@ -214,6 +214,29 @@ public:
     /// 前提：必须先调用 generateAIReport() 生成报告，该方法会缓存健康数据上下文。
     /// 如果尚未生成报告或 LLM 未配置，返回提示信息。
     virtual std::string askFollowUp(const std::string& userQuestion) = 0;
+
+    // ---- LLM 配置（供前端设置 API 连接）----
+
+    /// @brief 配置 LLM API 连接（供前端设置面板调用）
+    /// @param endpoint API 端点 URL（OpenAI 兼容格式，如 https://api.deepseek.com/chat/completions）
+    /// @param apiKey   API 密钥（为空时尝试从环境变量 OPENAI_API_KEY 读取）
+    /// @param model    模型名称（如 "deepseek-v4-pro"、"deepseek-chat"）
+    /// @return 配置成功返回 true（endpoint 非空且 API Key 存在）
+    ///
+    /// 用法：
+    ///   1. 前端在"设置 → AI 配置"对话框中让用户填写三项参数
+    ///   2. 调用 configureLLM(endpoint, apiKey, model) 保存配置
+    ///   3. 之后 generateAIReport() 和 askFollowUp() 即可正常使用
+    virtual bool configureLLM(const std::string& endpoint,
+                              const std::string& apiKey = "",
+                              const std::string& model = "deepseek-v4-pro") = 0;
+
+    /// @brief 检查 LLM 是否已配置 API Key
+    /// @return true 表示已配置，可以调用 generateAIReport()
+    ///
+    /// 前端可在启动时或设置页面调用此方法判断 AI 功能是否可用，
+    /// 从而决定是否禁用 AI 报告按钮或显示"请先配置 API"提示。
+    virtual bool isLLMConfigured() const = 0;
 };
 
 /// @brief 工厂函数 —— 创建 HealthManager 实例

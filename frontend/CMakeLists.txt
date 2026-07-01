@@ -36,6 +36,8 @@ set(FRONTEND_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/trenddialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/usermanage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vitalredialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AISettingsDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AIReportDialog.cpp
 )
 
 # 显式列出头文件（包含 Q_OBJECT 的头文件必须在此，AUTOMOC 才能处理）
@@ -51,6 +53,8 @@ set(FRONTEND_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/trenddialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/usermanage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/vitalredialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/AISettingsDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/AIReportDialog.h
 )
 
 # 显式列出 UI 设计文件

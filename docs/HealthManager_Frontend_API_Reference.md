@@ -679,15 +679,69 @@ std::string monthly = mgr->generateHealthReport(
 
 > AI 功能依赖 LLM（大语言模型）服务。系统当前使用 DeepSeek API（兼容 OpenAI 接口格式）。
 
-### 8.1 前置条件：配置 API Key
+### 8.1 前置条件：配置 API 连接
+
+**新方式（推荐）— 通过 UI 或代码配置**：
+
+```cpp
+// 方式 1：在代码中直接配置
+mgr->configureLLM(
+    "https://api.deepseek.com/chat/completions",  // endpoint
+    "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",         // apiKey
+    "deepseek-v4-pro"                              // model
+);
+
+// 方式 2：让用户通过 AI 设置对话框配置（推荐）
+AISettingsDialog dlg(mgr.get(), this);
+dlg.exec();
+```
+
+**旧方式（环境变量，仍支持）**：
 
 ```bash
 export OPENAI_API_KEY="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
-- 如果未设置 `OPENAI_API_KEY` 环境变量，AI 功能将自动降级到本地报告。
+如果 apiKey 参数为空字符串，`configureLLM()` 会自动从环境变量 `OPENAI_API_KEY` 读取。
 
-### 8.2 generateAIReport() — AI 驱动的个性化健康报告
+### 8.2 检查 AI 配置状态
+
+```cpp
+// 检查 LLM 是否已配置
+if (mgr->isLLMConfigured()) {
+    // AI 功能可用
+    auto report = mgr->generateAIReport(period);
+} else {
+    // 提示用户配置 API
+    QMessageBox::information(this, "提示",
+        "请先在 AI 设置中配置 API Key。");
+}
+```
+
+### 8.3 configureLLM() — 配置 LLM API 连接
+
+```cpp
+bool configureLLM(const std::string& endpoint,
+                  const std::string& apiKey = "",
+                  const std::string& model = "deepseek-v4-pro");
+```
+
+| 参数 | 说明 |
+|------|------|
+| `endpoint` | OpenAI 兼容的 chat completions URL（必填） |
+| `apiKey` | API 密钥，为空时从 `OPENAI_API_KEY` 环境变量读取 |
+| `model` | 模型名称，默认 "deepseek-v4-pro" |
+| **返回值** | `true` = 配置成功，`false` = API Key 为空 |
+
+### 8.4 isLLMConfigured() — 查询配置状态
+
+```cpp
+bool isLLMConfigured() const;
+```
+
+前端应在启动时和设置变更后调用此方法，以决定是否启用 AI 报告按钮。
+
+### 8.5 generateAIReport() — AI 驱动的个性化健康报告
 
 ```cpp
 std::string generateAIReport(ReportPeriod period);
@@ -1189,10 +1243,18 @@ if (doc.isObject()) {
 | `generateHealthReport(period)` | `string` | 周期性报告（WEEKLY/MONTHLY） |
 | `generateAIReport(period)` | `string` | AI 报告（JSON 或降级文本） |
 
+### LLM 配置
+
+| 方法 | 返回值 | 说明 |
+|------|--------|------|
+| `configureLLM(endpoint, apiKey, model)` | `bool` | 配置 LLM API 连接 |
+| `isLLMConfigured()` | `bool` | 查询是否已配置 |
+
 ### AI 功能
 
 | 方法 | 返回值 | 前提条件 |
 |------|--------|----------|
+| `generateAIReport(period)` | `string` | LLM 需已配置（否则降级） |
 | `askFollowUp(question)` | `string` | 必须先调用 `generateAIReport()` |
 
 ### 统计

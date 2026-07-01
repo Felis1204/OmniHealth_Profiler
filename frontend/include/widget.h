@@ -23,11 +23,17 @@ private slots:
     void on_AddDataButton_2_clicked();
     void on_usermanagebutton_clicked();
 
-    // 输出功能按钮
+    // 输出功能按钮（远程）
     void on_dashboardButton_clicked();
     void on_trendButton_clicked();
     void on_reportButton_clicked();
     void on_aiButton_clicked();
+
+    // AI 功能（本地新增）
+    void on_aiReportButton_clicked();
+    void on_aiSettingsButton_clicked();
+    void on_localReportButton_clicked();
+    void on_riskButton_clicked();
 
 private:
     Ui::Widget *ui;

@@ -468,6 +468,12 @@ public:
     // ---- LLM 咨询 ----
     std::string askFollowUp(const std::string& userQuestion) override;
 
+    // ---- LLM 配置 ----
+    bool configureLLM(const std::string& endpoint,
+                      const std::string& apiKey,
+                      const std::string& model) override;
+    bool isLLMConfigured() const override;
+
 private:
     std::unique_ptr<DataAccess> dataAccess_;
     std::unique_ptr<LLMService> llmService_;
@@ -1491,6 +1497,30 @@ std::string HealthManagerImpl::askFollowUp(const std::string& userQuestion) {
 
     std::cerr << "[Backend] 追问回复成功" << std::endl;
     return response;
+}
+
+// ============================================================
+// LLM 配置（供前端调用）
+// ============================================================
+
+bool HealthManagerImpl::configureLLM(const std::string& endpoint,
+                                     const std::string& apiKey,
+                                     const std::string& model) {
+    if (!llmService_) {
+        std::cerr << "[Backend] LLMService 未初始化" << std::endl;
+        return false;
+    }
+    bool ok = llmService_->configure(endpoint, apiKey, model);
+    if (ok) {
+        std::cerr << "[Backend] AI 顾问配置成功: " << endpoint << std::endl;
+        // 清除上一次报告的上下文（因为 API 已变更）
+        lastHealthContext_.clear();
+    }
+    return ok;
+}
+
+bool HealthManagerImpl::isLLMConfigured() const {
+    return llmService_ && llmService_->isConfigured();
 }
 
 } // namespace health

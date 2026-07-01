@@ -6,43 +6,32 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>900</width>
+    <height>620</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>OmniHealth Profiler</string>
   </property>
-  <widget class="QPushButton" name="pushButton">
-   <property name="geometry">
-    <rect>
-     <x>530</x>
-     <y>470</y>
-     <width>131</width>
-     <height>61</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>健康快照</string>
-   </property>
-  </widget>
+  <!-- 底部：健康报告快速预览 -->
   <widget class="QTextBrowser" name="textBrowser">
    <property name="geometry">
     <rect>
-     <x>440</x>
-     <y>40</y>
-     <width>311</width>
-     <height>381</height>
+     <x>20</x>
+     <y>320</y>
+     <width>860</width>
+     <height>280</height>
     </rect>
    </property>
   </widget>
+  <!-- 左侧：个人档案 -->
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>50</y>
+     <x>20</x>
+     <y>20</y>
      <width>191</width>
-     <height>251</height>
+     <height>281</height>
     </rect>
    </property>
    <property name="title">
@@ -53,7 +42,7 @@
      <rect>
       <x>30</x>
       <y>110</y>
-      <width>91</width>
+      <width>131</width>
       <height>41</height>
      </rect>
     </property>
@@ -66,7 +55,7 @@
      <rect>
       <x>30</x>
       <y>180</y>
-      <width>91</width>
+      <width>131</width>
       <height>41</height>
      </rect>
     </property>
@@ -79,7 +68,7 @@
      <rect>
       <x>30</x>
       <y>40</y>
-      <width>91</width>
+      <width>131</width>
       <height>41</height>
      </rect>
     </property>
@@ -88,13 +77,14 @@
     </property>
    </widget>
   </widget>
+  <!-- 中左：健康报告（远程新增） -->
   <widget class="QGroupBox" name="outputGroupBox">
    <property name="geometry">
     <rect>
-     <x>250</x>
-     <y>50</y>
+     <x>230</x>
+     <y>20</y>
      <width>170</width>
-     <height>251</height>
+     <height>281</height>
     </rect>
    </property>
    <property name="title">
@@ -150,6 +140,98 @@
     </property>
     <property name="text">
      <string>AI 报告</string>
+    </property>
+   </widget>
+  </widget>
+  <!-- 中右：AI 健康顾问（本地新增） -->
+  <widget class="QGroupBox" name="aiGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>420</x>
+     <y>20</y>
+     <width>221</width>
+     <height>281</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>AI 健康顾问</string>
+   </property>
+   <widget class="QPushButton" name="aiReportButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>40</y>
+      <width>161</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>🤖 AI 健康报告</string>
+    </property>
+    <property name="toolTip">
+     <string>生成 AI 驱动的个性化健康报告（周报/月报），支持追问</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="aiSettingsButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>110</y>
+      <width>161</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>⚙️ AI 设置</string>
+    </property>
+    <property name="toolTip">
+     <string>配置 API Endpoint、Key 和模型名称</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="localReportButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>170</y>
+      <width>161</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>📋 本地快照报告</string>
+    </property>
+    <property name="toolTip">
+     <string>生成基于最新单点数据的本地健康快照</string>
+    </property>
+   </widget>
+  </widget>
+  <!-- 右侧：风险评估（本地新增） -->
+  <widget class="QGroupBox" name="riskGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>660</x>
+     <y>20</y>
+     <width>210</width>
+     <height>281</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>风险评估</string>
+   </property>
+   <widget class="QPushButton" name="riskButton">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>40</y>
+      <width>150</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>📊 风险总览</string>
+    </property>
+    <property name="toolTip">
+     <string>查看 ASCVD/BMI/TyG/CDRS 风险评估结果</string>
     </property>
    </widget>
   </widget>
