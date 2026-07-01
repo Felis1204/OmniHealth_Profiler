@@ -23,6 +23,12 @@ private slots:
     void on_AddDataButton_2_clicked();
     void on_usermanagebutton_clicked();
 
+    // 输出功能按钮
+    void on_dashboardButton_clicked();
+    void on_trendButton_clicked();
+    void on_reportButton_clicked();
+    void on_aiButton_clicked();
+
 private:
     Ui::Widget *ui;
     std::unique_ptr<health::HealthManager> manager_;

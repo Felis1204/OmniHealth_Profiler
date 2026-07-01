@@ -4,6 +4,10 @@
 #include "AddData.h"
 #include "datamanage.h"
 #include "usermanage.h"
+#include "healthdashboarddialog.h"
+#include "trenddialog.h"
+#include "reportdialog.h"
+#include <QMessageBox>
 
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
@@ -46,5 +50,33 @@ void Widget::on_usermanagebutton_clicked()
 {
     UserManage dlg(manager_.get(), this);
     dlg.exec();
+}
+
+
+// ============================================================
+// 输出功能（与输入风格一致：按钮 → 弹对话框）
+// ============================================================
+
+void Widget::on_dashboardButton_clicked()
+{
+    HealthDashboardDialog dlg(manager_.get(), this);
+    dlg.exec();
+}
+
+void Widget::on_trendButton_clicked()
+{
+    TrendDialog dlg(manager_.get(), this);
+    dlg.exec();
+}
+
+void Widget::on_reportButton_clicked()
+{
+    ReportDialog dlg(manager_.get(), this);
+    dlg.exec();
+}
+
+void Widget::on_aiButton_clicked()
+{
+    QMessageBox::information(this, "提示", "AI 报告功能即将上线");
 }
 

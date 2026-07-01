@@ -13,7 +13,7 @@ if(WIN32)
                     "-DCMAKE_PREFIX_PATH=<Qt-install-path> to CMake "
                     "(e.g. C:/Qt/6.11.1/mingw_1310_64)")
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
 
 # 启用 Qt 的自动 MOC / UIC 处理
 set(CMAKE_AUTOMOC ON)
@@ -29,8 +29,11 @@ set(FRONTEND_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AddData.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bpredialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/datamanage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/healthdashboarddialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/labtestredialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/mhredialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reportdialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/trenddialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/usermanage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vitalredialog.cpp
 )
@@ -41,8 +44,11 @@ set(FRONTEND_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/AddData.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bpredialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/datamanage.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/healthdashboarddialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/labtestredialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/mhredialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/reportdialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/trenddialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/usermanage.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/vitalredialog.h
 )
@@ -53,8 +59,11 @@ set(FRONTEND_FORMS
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/AddData.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/bpredialog.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/datamanage.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/healthdashboarddialog.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/labtestredialog.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/mhredialog.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/reportdialog.ui
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms/trenddialog.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/usermanage.ui
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/vitalredialog.ui
 )
@@ -75,6 +84,7 @@ target_include_directories(Health_Manager_App PRIVATE
 target_link_libraries(Health_Manager_App PRIVATE
     health_backend
     Qt6::Widgets
+    Qt6::Charts
 )
 
 # 要求 C++17

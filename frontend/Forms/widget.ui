@@ -16,23 +16,23 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>490</x>
-     <y>310</y>
+     <x>530</x>
+     <y>470</y>
      <width>131</width>
      <height>61</height>
     </rect>
    </property>
    <property name="text">
-    <string>PushButton</string>
+    <string>健康快照</string>
    </property>
   </widget>
   <widget class="QTextBrowser" name="textBrowser">
    <property name="geometry">
     <rect>
-     <x>420</x>
-     <y>60</y>
-     <width>256</width>
-     <height>192</height>
+     <x>440</x>
+     <y>40</y>
+     <width>311</width>
+     <height>381</height>
     </rect>
    </property>
   </widget>
@@ -85,6 +85,71 @@
     </property>
     <property name="text">
      <string>用户管理</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="outputGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>250</x>
+     <y>50</y>
+     <width>170</width>
+     <height>251</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>健康报告</string>
+   </property>
+   <widget class="QPushButton" name="dashboardButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>30</y>
+      <width>130</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>健康仪表盘</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="trendButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>80</y>
+      <width>130</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>趋势分析</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="reportButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>130</y>
+      <width>130</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>生成报告</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="aiButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>180</y>
+      <width>130</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>AI 报告</string>
     </property>
    </widget>
   </widget>
