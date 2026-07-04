@@ -38,6 +38,7 @@ set(FRONTEND_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/vitalredialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AISettingsDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AIReportDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SeedData.cpp
 )
 
 # 显式列出头文件（包含 Q_OBJECT 的头文件必须在此，AUTOMOC 才能处理）

@@ -2,6 +2,7 @@
 #define TRENDDIALOG_H
 
 #include <QDialog>
+#include "HealthManager.h"
 
 namespace health { class HealthManager; }
 
@@ -20,14 +21,21 @@ public:
 
 private slots:
     void on_searchButton_clicked();
+    void on_metricCombo_currentIndexChanged(int index);
+    void on_prevBtn_clicked();
+    void on_nextBtn_clicked();
     void on_closeButton_clicked();
 
 private:
     void clearChart();
-    void updateStats(const QString &text);
+    void drawCurrentMetric();
+    void updateStatsForCurrent();
+    void updateMetricSelector();
 
     Ui::TrendDialog *ui;
     health::HealthManager *manager_;
+    health::TrendReport report_;
+    int currentMetricIndex_ = 0;
 };
 
 #endif // TRENDDIALOG_H

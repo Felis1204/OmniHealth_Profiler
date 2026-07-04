@@ -2,176 +2,44 @@
 <ui version="4.0">
  <class>DataManage</class>
  <widget class="QDialog" name="DataManage">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>650</width>
-    <height>480</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>数据管理</string>
-  </property>
-  <!-- 筛选栏 -->
-  <widget class="QComboBox" name="typeCombo">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>10</y>
-     <width>100</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <item><property name="text"><string>全部</string></property></item>
-   <item><property name="text"><string>体征</string></property></item>
-   <item><property name="text"><string>临床检验</string></property></item>
-   <item><property name="text"><string>血压</string></property></item>
-   <item><property name="text"><string>病历摘要</string></property></item>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>120</x>
-     <y>12</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>起始：</string>
-   </property>
-  </widget>
-  <widget class="QDateEdit" name="fromDateEdit">
-   <property name="geometry">
-    <rect>
-     <x>155</x>
-     <y>10</y>
-     <width>110</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="calendarPopup">
-    <bool>true</bool>
-   </property>
-   <property name="date">
-    <date>2026-01-01</date>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>275</x>
-     <y>12</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>截止：</string>
-   </property>
-  </widget>
-  <widget class="QDateEdit" name="toDateEdit">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>10</y>
-     <width>110</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="calendarPopup">
-    <bool>true</bool>
-   </property>
-   <property name="date">
-    <date>2026-12-31</date>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="searchButton">
-   <property name="geometry">
-    <rect>
-     <x>440</x>
-     <y>10</y>
-     <width>80</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>🔍 查找</string>
-   </property>
-  </widget>
-  <!-- 结果表格 -->
-  <widget class="QTableWidget" name="resultTable">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>45</y>
-     <width>630</width>
-     <height>350</height>
-    </rect>
-   </property>
-   <property name="selectionBehavior">
-    <enum>QAbstractItemView::SelectRows</enum>
-   </property>
-   <property name="selectionMode">
-    <enum>QAbstractItemView::SingleSelection</enum>
-   </property>
-   <property name="editTriggers">
-    <set>QAbstractItemView::NoEditTriggers</set>
-   </property>
-   <property name="alternatingRowColors">
-    <bool>true</bool>
-   </property>
-   <column>
-    <property name="text"><string>日期</string></property>
-   </column>
-   <column>
-    <property name="text"><string>类型</string></property>
-   </column>
-   <column>
-    <property name="text"><string>内容摘要</string></property>
-   </column>
-  </widget>
-  <!-- 操作按钮 -->
-  <widget class="QPushButton" name="viewButton">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>405</y>
-     <width>80</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>查看/编辑</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="deleteButton">
-   <property name="geometry">
-    <rect>
-     <x>100</x>
-     <y>405</y>
-     <width>60</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>删除</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="closeButton">
-   <property name="geometry">
-    <rect>
-     <x>560</x>
-     <y>440</y>
-     <width>80</width>
-     <height>30</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>关闭</string>
-   </property>
-  </widget>
+  <property name="geometry"><rect><x>0</x><y>0</y><width>650</width><height>520</height></rect></property>
+  <property name="windowTitle"><string>数据管理</string></property>
+  <property name="minimumSize"><size><width>550</width><height>420</height></size></property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <layout class="QHBoxLayout" name="filterLayout">
+     <item><widget class="QComboBox" name="typeCombo">
+      <item><property name="text"><string>全部</string></property></item>
+      <item><property name="text"><string>体征</string></property></item>
+      <item><property name="text"><string>临床检验</string></property></item>
+      <item><property name="text"><string>血压</string></property></item>
+      <item><property name="text"><string>病历摘要</string></property></item>
+     </widget></item>
+     <item><widget class="QLabel" name="label"><property name="text"><string>起始：</string></property></widget></item>
+     <item><widget class="QDateEdit" name="fromDateEdit"><property name="calendarPopup"><bool>true</bool></property><property name="date"><date>2026-01-01</date></property></widget></item>
+     <item><widget class="QLabel" name="label_2"><property name="text"><string>截止：</string></property></widget></item>
+     <item><widget class="QDateEdit" name="toDateEdit"><property name="calendarPopup"><bool>true</bool></property><property name="date"><date>2026-12-31</date></property></widget></item>
+     <item><widget class="QPushButton" name="searchButton"><property name="text"><string>🔍 查找</string></property></widget></item>
+    </layout>
+   </item>
+   <item><widget class="QTableWidget" name="resultTable">
+    <property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property>
+    <property name="selectionMode"><enum>QAbstractItemView::SingleSelection</enum></property>
+    <property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property>
+    <property name="alternatingRowColors"><bool>true</bool></property>
+    <column><property name="text"><string>日期</string></property></column>
+    <column><property name="text"><string>类型</string></property></column>
+    <column><property name="text"><string>内容摘要</string></property></column>
+   </widget></item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonLayout">
+     <item><widget class="QPushButton" name="viewButton"><property name="text"><string>查看/编辑</string></property></widget></item>
+     <item><widget class="QPushButton" name="deleteButton"><property name="text"><string>删除</string></property></widget></item>
+     <item><spacer name="btnSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item><widget class="QPushButton" name="closeButton"><property name="text"><string>关闭</string></property></widget></item>
+    </layout>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>

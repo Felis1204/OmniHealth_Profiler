@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QUuid>
 #include <QPushButton>
+#include <QDateTime>
 
 MHReDialog::MHReDialog(health::HealthManager *mgr, QWidget *parent)
     : QDialog(parent)
@@ -12,6 +13,7 @@ MHReDialog::MHReDialog(health::HealthManager *mgr, QWidget *parent)
 {
     ui->setupUi(this);
     ui->buttonBox->button(QDialogButtonBox::Ok)->setText("保存");
+    ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
 }
 
 MHReDialog::~MHReDialog()
@@ -22,6 +24,19 @@ MHReDialog::~MHReDialog()
 void MHReDialog::accept()
 {
     saveData();
+}
+
+static health::TimePoint toTimePoint(const QDateTime& dt)
+{
+    auto ms = dt.toMSecsSinceEpoch();
+    return health::TimePoint(std::chrono::milliseconds(ms));
+}
+
+static QDateTime fromTimePoint(const health::TimePoint& tp)
+{
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  tp.time_since_epoch()).count();
+    return QDateTime::fromMSecsSinceEpoch(ms);
 }
 
 void MHReDialog::saveData()
@@ -35,8 +50,7 @@ void MHReDialog::saveData()
 
     health::MedicalHistoryRecord record;
     record.recordType = health::HealthRecordType::HISTORY;
-    record.timestamp  = std::chrono::system_clock::now();
-
+    record.timestamp  = toTimePoint(ui->dateTimeEdit->dateTime());
     record.category = ui->categoryCombo->currentText().toStdString();
     record.content  = content.toStdString();
 
@@ -57,5 +71,6 @@ void MHReDialog::loadRecord(const health::MedicalHistoryRecord& record)
 {
     ui->categoryCombo->setCurrentText(QString::fromStdString(record.category));
     ui->contentEdit->setPlainText(QString::fromStdString(record.content));
+    ui->dateTimeEdit->setDateTime(fromTimePoint(record.timestamp));
     editingId_ = record.id;
 }

@@ -23,6 +23,9 @@ private slots:
     void on_closeButton_clicked();
 
 private:
+    /// @brief 将本地报告纯文本转为带主题色的 HTML
+    static QString formatLocalReport(const std::string& raw);
+
     Ui::ReportDialog *ui;
     health::HealthManager *manager_;
 };

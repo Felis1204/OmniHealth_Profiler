@@ -2,304 +2,37 @@
 <ui version="4.0">
  <class>VitalReDialog</class>
  <widget class="QDialog" name="VitalReDialog">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>400</width>
-    <height>300</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Dialog</string>
-  </property>
-  <widget class="QDialogButtonBox" name="buttonBox">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>260</y>
-     <width>341</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Orientation::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
-   </property>
-   <property name="centerButtons">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="stepspinBox">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>200</y>
-     <width>42</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="maximum">
-    <number>1000000</number>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="weightSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>80</y>
-     <width>62</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="maximum">
-    <double>300.000000000000000</double>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="waistSpinBox_2">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>120</y>
-     <width>62</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="maximum">
-    <double>300.000000000000000</double>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="heartrateSpinBox_3">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>160</y>
-     <width>62</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="maximum">
-    <double>350.000000000000000</double>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="sleephSpinBox_4">
-   <property name="geometry">
-    <rect>
-     <x>100</x>
-     <y>240</y>
-     <width>62</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="maximum">
-    <double>48.000000000000000</double>
-   </property>
-  </widget>
-  <widget class="QDoubleSpinBox" name="hightSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>80</x>
-     <y>40</y>
-     <width>62</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="maximum">
-    <double>280.000000000000000</double>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>40</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>身高：</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>80</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>体重：</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_3">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>160</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>心率：</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_4">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>120</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>腰围：</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_5">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>240</y>
-     <width>61</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>睡眠时长：</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_6">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>200</y>
-     <width>31</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>步数：</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_7">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>40</y>
-     <width>41</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>（cm）</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_8">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>80</y>
-     <width>41</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>（kg）</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_9">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>120</y>
-     <width>41</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>（cm）</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_10">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>160</y>
-     <width>41</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>（bp）</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_11">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>240</y>
-     <width>41</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>（h）</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_12">
-   <property name="geometry">
-    <rect>
-     <x>170</x>
-     <y>200</y>
-     <width>41</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>（步）</string>
-   </property>
-  </widget>
+  <property name="geometry"><rect><x>0</x><y>0</y><width>400</width><height>400</height></rect></property>
+  <property name="windowTitle"><string>体征记录</string></property>
+  <property name="minimumSize"><size><width>360</width><height>360</height></size></property>
+  <property name="styleSheet"><string>QLabel { color: #333; } QGroupBox { color: #333; }</string></property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item><widget class="QGroupBox" name="timeGroup"><property name="title"><string>记录时间</string></property>
+    <layout class="QHBoxLayout"><item><widget class="QDateTimeEdit" name="dateTimeEdit"><property name="calendarPopup"><bool>true</bool></property><property name="displayFormat"><string>yyyy-MM-dd HH:mm</string></property></widget></item></layout>
+   </widget></item>
+   <item><widget class="QGroupBox" name="dataGroup"><property name="title"><string>体征指标</string></property>
+    <layout class="QFormLayout" name="formLayout">
+     <property name="spacing"><number>10</number></property>
+     <item row="0" column="0"><widget class="QLabel" name="label"><property name="text"><string>身高</string></property></widget></item>
+     <item row="0" column="1"><widget class="QDoubleSpinBox" name="hightSpinBox"><property name="maximum"><double>280</double></property><property name="suffix"><string> cm</string></property><property name="toolTip"><string notr="true">留空或为 0 表示不记录此项</string></property><property name="toolTip"><string>正常范围：150-200 cm</string></property></widget></item>
+     <item row="1" column="0"><widget class="QLabel" name="label_2"><property name="text"><string>体重</string></property></widget></item>
+     <item row="1" column="1"><widget class="QDoubleSpinBox" name="weightSpinBox"><property name="maximum"><double>300</double></property><property name="suffix"><string> kg</string></property><property name="toolTip"><string notr="true">留空或为 0 表示不记录此项</string></property><property name="toolTip"><string>正常范围：50-100 kg</string></property></widget></item>
+     <item row="2" column="0"><widget class="QLabel" name="label_4"><property name="text"><string>腰围</string></property></widget></item>
+     <item row="2" column="1"><widget class="QDoubleSpinBox" name="waistSpinBox_2"><property name="maximum"><double>300</double></property><property name="suffix"><string> cm</string></property><property name="toolTip"><string notr="true">留空或为 0 表示不记录此项</string></property><property name="toolTip"><string>男 &lt;90 cm，女 &lt;85 cm</string></property></widget></item>
+     <item row="3" column="0"><widget class="QLabel" name="label_3"><property name="text"><string>心率</string></property></widget></item>
+     <item row="3" column="1"><widget class="QDoubleSpinBox" name="heartrateSpinBox_3"><property name="maximum"><double>350</double></property><property name="suffix"><string> bpm</string></property><property name="toolTip"><string notr="true">留空或为 0 表示不记录此项</string></property><property name="toolTip"><string>正常安静心率：60-100 bpm</string></property></widget></item>
+     <item row="4" column="0"><widget class="QLabel" name="label_6"><property name="text"><string>步数</string></property></widget></item>
+     <item row="4" column="1"><widget class="QSpinBox" name="stepspinBox"><property name="maximum"><number>1000000</number></property><property name="suffix"><string> 步</string></property><property name="toolTip"><string notr="true">留空或为 0 表示不记录此项</string></property><property name="toolTip"><string>建议每日 6000-10000 步</string></property></widget></item>
+     <item row="5" column="0"><widget class="QLabel" name="label_5"><property name="text"><string>睡眠时长</string></property></widget></item>
+     <item row="5" column="1"><widget class="QDoubleSpinBox" name="sleephSpinBox_4"><property name="maximum"><double>48</double></property><property name="suffix"><string> 小时</string></property><property name="toolTip"><string notr="true">留空或为 0 表示不记录此项</string></property><property name="toolTip"><string>建议每日 7-9 小时</string></property></widget></item>
+    </layout>
+   </widget></item>
+   <item><widget class="QDialogButtonBox" name="buttonBox"><property name="standardButtons"><set>QDialogButtonBox::Ok|QDialogButtonBox::Cancel</set></property></widget></item>
+  </layout>
  </widget>
  <resources/>
  <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>VitalReDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>286</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>VitalReDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
+  <connection><sender>buttonBox</sender><signal>accepted()</signal><receiver>VitalReDialog</receiver><slot>accept()</slot></connection>
+  <connection><sender>buttonBox</sender><signal>rejected()</signal><receiver>VitalReDialog</receiver><slot>reject()</slot></connection>
  </connections>
 </ui>

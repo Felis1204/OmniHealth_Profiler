@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QUuid>
 #include <QPushButton>
+#include <QDateTime>
 
 BPReDialog::BPReDialog(health::HealthManager *mgr, QWidget *parent)
     : QDialog(parent)
@@ -12,6 +13,7 @@ BPReDialog::BPReDialog(health::HealthManager *mgr, QWidget *parent)
 {
     ui->setupUi(this);
     ui->buttonBox->button(QDialogButtonBox::Ok)->setText("保存");
+    ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
 }
 
 BPReDialog::~BPReDialog()
@@ -22,6 +24,19 @@ BPReDialog::~BPReDialog()
 void BPReDialog::accept()
 {
     saveData();
+}
+
+static health::TimePoint toTimePoint(const QDateTime& dt)
+{
+    auto ms = dt.toMSecsSinceEpoch();
+    return health::TimePoint(std::chrono::milliseconds(ms));
+}
+
+static QDateTime fromTimePoint(const health::TimePoint& tp)
+{
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  tp.time_since_epoch()).count();
+    return QDateTime::fromMSecsSinceEpoch(ms);
 }
 
 void BPReDialog::saveData()
@@ -36,7 +51,7 @@ void BPReDialog::saveData()
 
     health::BloodPressureRecord record;
     record.recordType = health::HealthRecordType::BP;
-    record.timestamp  = std::chrono::system_clock::now();
+    record.timestamp  = toTimePoint(ui->dateTimeEdit->dateTime());
 
     if (systolic > 0)  record.systolic  = systolic;
     if (diastolic > 0) record.diastolic = diastolic;
@@ -58,5 +73,6 @@ void BPReDialog::loadRecord(const health::BloodPressureRecord& record)
 {
     if (record.systolic)  ui->systolicSpinBox->setValue(*record.systolic);
     if (record.diastolic) ui->diastolicSpinBox->setValue(*record.diastolic);
+    ui->dateTimeEdit->setDateTime(fromTimePoint(record.timestamp));
     editingId_ = record.id;
 }

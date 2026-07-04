@@ -18,22 +18,20 @@ public:
     ~Widget() override;
 
 private slots:
-    void on_pushButton_clicked();
+    // 个人档案
+    void on_usermanagebutton_clicked();
     void on_AddDataButton_clicked();
     void on_AddDataButton_2_clicked();
-    void on_usermanagebutton_clicked();
 
-    // 输出功能按钮（远程）
+    // 健康报告与分析
     void on_dashboardButton_clicked();
     void on_trendButton_clicked();
     void on_reportButton_clicked();
-    void on_aiButton_clicked();
+    void on_riskButton_clicked();
 
-    // AI 功能（本地新增）
+    // AI 功能
     void on_aiReportButton_clicked();
     void on_aiSettingsButton_clicked();
-    void on_localReportButton_clicked();
-    void on_riskButton_clicked();
 
 private:
     Ui::Widget *ui;

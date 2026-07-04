@@ -4,6 +4,7 @@
 #include <QMessageBox>
 #include <QUuid>
 #include <QPushButton>
+#include <QDateTime>
 
 VitalReDialog::VitalReDialog(health::HealthManager *mgr, QWidget *parent)
     : QDialog(parent)
@@ -12,6 +13,7 @@ VitalReDialog::VitalReDialog(health::HealthManager *mgr, QWidget *parent)
 {
     ui->setupUi(this);
     ui->buttonBox->button(QDialogButtonBox::Ok)->setText("保存");
+    ui->dateTimeEdit->setDateTime(QDateTime::currentDateTime());
 }
 
 VitalReDialog::~VitalReDialog()
@@ -22,6 +24,19 @@ VitalReDialog::~VitalReDialog()
 void VitalReDialog::accept()
 {
     saveData();
+}
+
+static health::TimePoint toTimePoint(const QDateTime& dt)
+{
+    auto ms = dt.toMSecsSinceEpoch();
+    return health::TimePoint(std::chrono::milliseconds(ms));
+}
+
+static QDateTime fromTimePoint(const health::TimePoint& tp)
+{
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                  tp.time_since_epoch()).count();
+    return QDateTime::fromMSecsSinceEpoch(ms);
 }
 
 void VitalReDialog::saveData()
@@ -35,7 +50,6 @@ void VitalReDialog::saveData()
     int    steps  = ui->stepspinBox->value();
     double sleep  = ui->sleephSpinBox_4->value();
 
-    // 至少填一项
     if (height <= 0 && weight <= 0 && waist <= 0 && hr <= 0
         && steps <= 0 && sleep <= 0) {
         QMessageBox::warning(this, "提示", "请至少填写一项数据");
@@ -43,7 +57,7 @@ void VitalReDialog::saveData()
     }
 
     record.recordType = health::HealthRecordType::VITALS;
-    record.timestamp = std::chrono::system_clock::now();
+    record.timestamp = toTimePoint(ui->dateTimeEdit->dateTime());
 
     if (height > 0) record.heightCm  = height;
     if (weight > 0) record.weightKg  = weight;
@@ -73,5 +87,6 @@ void VitalReDialog::loadRecord(const health::VitalsRecord& record)
     if (record.heartRate) ui->heartrateSpinBox_3->setValue(*record.heartRate);
     if (record.steps)     ui->stepspinBox->setValue(*record.steps);
     if (record.sleepHours) ui->sleephSpinBox_4->setValue(*record.sleepHours);
+    ui->dateTimeEdit->setDateTime(fromTimePoint(record.timestamp));
     editingId_ = record.id;
 }

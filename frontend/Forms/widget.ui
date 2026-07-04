@@ -3,236 +3,144 @@
  <class>Widget</class>
  <widget class="QWidget" name="Widget">
   <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>900</width>
-    <height>620</height>
-   </rect>
+   <rect><x>0</x><y>0</y><width>860</width><height>420</height></rect>
   </property>
   <property name="windowTitle">
-   <string>OmniHealth Profiler</string>
+   <string>OmniHealth Profiler — 个人健康数字孪生系统</string>
   </property>
-  <!-- 底部：健康报告快速预览 -->
-  <widget class="QTextBrowser" name="textBrowser">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>320</y>
-     <width>860</width>
-     <height>280</height>
-    </rect>
-   </property>
-  </widget>
-  <!-- 左侧：个人档案 -->
+  <property name="styleSheet">
+   <string notr="true">
+    QGroupBox { font-weight: bold; font-size: 13px; border: 1px solid #d0d0d0;
+     border-radius: 8px; margin-top: 14px; padding-top: 20px;
+     background: #ffffff; color: #333333; }
+    QGroupBox::title { subcontrol-origin: margin; left: 14px;
+     padding: 0 8px; color: #333333; }
+    QPushButton { padding: 8px 16px; border: 1px solid #c0c0c0;
+     border-radius: 6px; background: #ffffff; font-size: 13px;
+     color: #333333; }
+    QPushButton:hover { background: #e3f2fd; border-color: #1565c0;
+     color: #1565c0; }
+    QLabel { color: #333333; }
+   </string>
+  </property>
+
+  <!-- ====== 左列：个人档案 (240×350) ====== -->
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>20</y>
-     <width>191</width>
-     <height>281</height>
-    </rect>
+    <rect><x>14</x><y>12</y><width>240</width><height>350</height></rect>
    </property>
-   <property name="title">
-    <string>个人档案</string>
-   </property>
+   <property name="title"><string>👤 个人档案</string></property>
+   <widget class="QPushButton" name="usermanagebutton">
+    <property name="geometry">
+     <rect><x>20</x><y>32</y><width>200</width><height>42</height></rect></property>
+    <property name="text"><string>👤 用户管理</string></property>
+    <property name="toolTip"><string>查看和编辑用户基本档案信息</string></property>
+   </widget>
    <widget class="QPushButton" name="AddDataButton">
     <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>110</y>
-      <width>131</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>新增档案</string>
-    </property>
+     <rect><x>20</x><y>90</y><width>200</width><height>42</height></rect></property>
+    <property name="text"><string>➕ 新增数据</string></property>
+    <property name="toolTip"><string>录入体征/检验/血压/病历数据</string></property>
    </widget>
    <widget class="QPushButton" name="AddDataButton_2">
     <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>180</y>
-      <width>131</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>档案管理</string>
-    </property>
+     <rect><x>20</x><y>148</y><width>200</width><height>42</height></rect></property>
+    <property name="text"><string>📋 数据管理</string></property>
+    <property name="toolTip"><string>浏览、编辑和删除已录入的记录</string></property>
    </widget>
-   <widget class="QPushButton" name="usermanagebutton">
+   <!-- 分隔提示 -->
+   <widget class="QLabel" name="hintLabel">
     <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>40</y>
-      <width>131</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>用户管理</string>
-    </property>
+     <rect><x>20</x><y>210</y><width>200</width><height>120</height></rect></property>
+    <property name="text"><string>&lt;html&gt;&lt;body style='color:#888; font-size:11px;'&gt;
+&lt;p&gt;💡 &lt;b&gt;使用提示&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;1. 先完善「用户管理」中的档案&lt;br&gt;
+2. 再用「新增数据」录入健康指标&lt;br&gt;
+3. 右侧生成报告、查看趋势&lt;br&gt;
+4. AI 报告需先在「AI 设置」配置 Key&lt;/p&gt;
+&lt;p&gt;数据存储于本地 omnihealth.db&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;</string></property>
+    <property name="wordWrap"><bool>true</bool></property>
+    <property name="alignment"><set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set></property>
    </widget>
   </widget>
-  <!-- 中左：健康报告（远程新增） -->
+
+  <!-- ====== 中列：健康报告与分析 (340×350) ====== -->
   <widget class="QGroupBox" name="outputGroupBox">
    <property name="geometry">
-    <rect>
-     <x>230</x>
-     <y>20</y>
-     <width>170</width>
-     <height>281</height>
-    </rect>
+    <rect><x>270</x><y>12</y><width>340</width><height>350</height></rect>
    </property>
-   <property name="title">
-    <string>健康报告</string>
-   </property>
+   <property name="title"><string>📊 健康报告与分析</string></property>
    <widget class="QPushButton" name="dashboardButton">
     <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>30</y>
-      <width>130</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>健康仪表盘</string>
-    </property>
+     <rect><x>20</x><y>32</y><width>300</width><height>42</height></rect></property>
+    <property name="text"><string>🩺 健康仪表盘</string></property>
+    <property name="toolTip"><string>BMI / ASCVD / TyG / CDRS 四项风险评估</string></property>
    </widget>
    <widget class="QPushButton" name="trendButton">
     <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>80</y>
-      <width>130</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>趋势分析</string>
-    </property>
+     <rect><x>20</x><y>84</y><width>300</width><height>42</height></rect></property>
+    <property name="text"><string>📈 趋势分析</string></property>
+    <property name="toolTip"><string>体征/检验/血压时间序列折线图</string></property>
    </widget>
    <widget class="QPushButton" name="reportButton">
     <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>130</y>
-      <width>130</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>生成报告</string>
-    </property>
+     <rect><x>20</x><y>136</y><width>300</width><height>42</height></rect></property>
+    <property name="text"><string>📋 本地报告</string></property>
+    <property name="toolTip"><string>生成周报/月报（纯本地计算，无需网络）</string></property>
    </widget>
-   <widget class="QPushButton" name="aiButton">
+   <widget class="QPushButton" name="riskButton">
     <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>180</y>
-      <width>130</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>AI 报告</string>
-    </property>
+     <rect><x>20</x><y>188</y><width>300</width><height>42</height></rect></property>
+    <property name="text"><string>⚠️ 风险总览</string></property>
+    <property name="toolTip"><string>ASCVD / BMI / TyG / CDRS 快速查看</string></property>
    </widget>
-  </widget>
-  <!-- 中右：AI 健康顾问（本地新增） -->
-  <widget class="QGroupBox" name="aiGroupBox">
-   <property name="geometry">
-    <rect>
-     <x>420</x>
-     <y>20</y>
-     <width>221</width>
-     <height>281</height>
-    </rect>
-   </property>
-   <property name="title">
-    <string>AI 健康顾问</string>
-   </property>
    <widget class="QPushButton" name="aiReportButton">
     <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>40</y>
-      <width>161</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>🤖 AI 健康报告</string>
-    </property>
-    <property name="toolTip">
-     <string>生成 AI 驱动的个性化健康报告（周报/月报），支持追问</string>
-    </property>
+     <rect><x>20</x><y>240</y><width>300</width><height>42</height></rect></property>
+    <property name="text"><string>🤖 AI 健康报告</string></property>
+    <property name="toolTip"><string>DeepSeek AI 驱动的个性化报告 + 追问</string></property>
    </widget>
    <widget class="QPushButton" name="aiSettingsButton">
     <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>110</y>
-      <width>161</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>⚙️ AI 设置</string>
-    </property>
-    <property name="toolTip">
-     <string>配置 API Endpoint、Key 和模型名称</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="localReportButton">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>170</y>
-      <width>161</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>📋 本地快照报告</string>
-    </property>
-    <property name="toolTip">
-     <string>生成基于最新单点数据的本地健康快照</string>
-    </property>
+     <rect><x>20</x><y>292</y><width>300</width><height>42</height></rect></property>
+    <property name="text"><string>⚙️ AI 设置</string></property>
+    <property name="toolTip"><string>配置 API Endpoint / Key / Model</string></property>
    </widget>
   </widget>
-  <!-- 右侧：风险评估（本地新增） -->
-  <widget class="QGroupBox" name="riskGroupBox">
+
+  <!-- ====== 右列：关于 (240×350) ====== -->
+  <widget class="QGroupBox" name="aboutGroupBox">
    <property name="geometry">
-    <rect>
-     <x>660</x>
-     <y>20</y>
-     <width>210</width>
-     <height>281</height>
-    </rect>
+    <rect><x>626</x><y>12</y><width>220</width><height>350</height></rect>
    </property>
-   <property name="title">
-    <string>风险评估</string>
-   </property>
-   <widget class="QPushButton" name="riskButton">
+   <property name="title"><string>ℹ️ 关于</string></property>
+   <widget class="QLabel" name="aboutLabel">
     <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>40</y>
-      <width>150</width>
-      <height>51</height>
-     </rect>
+     <rect><x>14</x><y>24</y><width>192</width><height>310</height></rect>
     </property>
     <property name="text">
-     <string>📊 风险总览</string>
+     <string>&lt;html&gt;&lt;body style='color:#555; font-size:12px;'&gt;
+&lt;p&gt;&lt;b&gt;OmniHealth Profiler&lt;/b&gt;&lt;br&gt;v0.2.0&lt;/p&gt;
+&lt;p&gt;个人健康数字孪生系统&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;b&gt;核心能力&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;• 5 种健康数据录入与追踪&lt;br&gt;
+• China-PAR 10 年 ASCVD 评估&lt;br&gt;
+• TyG 胰岛素抵抗筛查&lt;br&gt;
+• CDRS 糖尿病风险评分&lt;br&gt;
+• AI 个性化健康报告&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;b&gt;技术特性&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;• SQLite 本地存储，隐私优先&lt;br&gt;
+• DeepSeek API 驱动 AI 分析&lt;br&gt;
+• 跨平台 macOS / Windows&lt;/p&gt;
+&lt;hr&gt;
+&lt;p style='color:#999; font-size:10px;'&gt;医学算法基于中国人群大样本&lt;br&gt;队列研究。AI 报告仅供参考，&lt;br&gt;不构成医疗诊断建议。&lt;/p&gt;
+&lt;/body&gt;&lt;/html&gt;</string>
     </property>
-    <property name="toolTip">
-     <string>查看 ASCVD/BMI/TyG/CDRS 风险评估结果</string>
-    </property>
+    <property name="wordWrap"><bool>true</bool></property>
+    <property name="alignment"><set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set></property>
    </widget>
   </widget>
  </widget>

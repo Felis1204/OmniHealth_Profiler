@@ -2,6 +2,7 @@
 #include "ui_healthdashboarddialog.h"
 #include "HealthManager.h"
 #include "ASCVDCalculator.h"
+#include "Theme.h"
 
 HealthDashboardDialog::HealthDashboardDialog(health::HealthManager *mgr,
                                                QWidget *parent)
@@ -10,6 +11,9 @@ HealthDashboardDialog::HealthDashboardDialog(health::HealthManager *mgr,
     , manager_(mgr)
 {
     ui->setupUi(this);
+
+    // 统一主题
+    setStyleSheet(Theme::DialogBase());
 
     // ── 计算所有评估指标 ──
     double bmi  = manager_->calculateBMI();
@@ -22,13 +26,9 @@ HealthDashboardDialog::HealthDashboardDialog(health::HealthManager *mgr,
         ui->bmiValue->setText(QString::number(bmi, 'f', 1));
         QString category = QString::fromStdString(manager_->getBMICategory());
         ui->bmiDesc->setText(category);
-
-        // 颜色：正常显示绿色，否则显示橙色
-        if (category == QString::fromUtf8("正常")) {
-            ui->bmiValue->setStyleSheet("font-size: 22px; font-weight: bold; color: green;");
-        } else {
-            ui->bmiValue->setStyleSheet("font-size: 22px; font-weight: bold; color: orange;");
-        }
+        const char* color = Theme::riskColor(category);
+        ui->bmiValue->setStyleSheet(
+            QString("font-size: 22px; font-weight: bold; color: %1;").arg(color));
     } else {
         ui->bmiValue->setText("—");
         ui->bmiDesc->setText("请录入身高体重");
@@ -40,12 +40,7 @@ HealthDashboardDialog::HealthDashboardDialog(health::HealthManager *mgr,
         QString risk = QString::fromStdString(
             health::ASCVDCalculator::getRiskCategory(ascvd));
         ui->ascvdDesc->setText(risk);
-
-        // 颜色：低危/临界绿色，中危橙色，高危/极高危红色
-        QString color = "green";
-        if (risk.contains("中危"))       color = "orange";
-        else if (risk.contains("高危"))  color = "red";
-        else if (risk.contains("极高危")) color = "red";
+        const char* color = Theme::riskColor(risk);
         ui->ascvdValue->setStyleSheet(
             QString("font-size: 22px; font-weight: bold; color: %1;").arg(color));
     } else {
@@ -57,9 +52,7 @@ HealthDashboardDialog::HealthDashboardDialog(health::HealthManager *mgr,
     if (tyg.score > 0) {
         ui->tygValue->setText(QString::number(tyg.score, 'f', 2));
         ui->tygDesc->setText(QString::fromStdString(tyg.riskLevel));
-
-        // 高风险显示红色，低风险显示绿色
-        QString color = (tyg.score >= 8.70) ? "red" : "green";
+        const char* color = (tyg.score >= 8.70) ? Theme::Danger() : Theme::Okay();
         ui->tygValue->setStyleSheet(
             QString("font-size: 22px; font-weight: bold; color: %1;").arg(color));
     } else {
@@ -71,10 +64,7 @@ HealthDashboardDialog::HealthDashboardDialog(health::HealthManager *mgr,
     if (cdrs.score > 0) {
         ui->cdrsValue->setText(QString::number(cdrs.score, 'f', 0) + " 分");
         ui->cdrsDesc->setText(QString::fromStdString(cdrs.riskLevel));
-
-        // 根据分数判断颜色（男≥17 女≥14 为高风险）
-        QString color = (cdrs.score >= 17) ? "red" : "green";
-        // CDRS 阈值因性别而异，保守用 17 作为高风险切点
+        const char* color = (cdrs.score >= 17) ? Theme::Danger() : Theme::Okay();
         ui->cdrsValue->setStyleSheet(
             QString("font-size: 22px; font-weight: bold; color: %1;").arg(color));
     } else {

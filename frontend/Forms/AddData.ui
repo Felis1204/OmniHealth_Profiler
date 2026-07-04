@@ -2,82 +2,44 @@
 <ui version="4.0">
  <class>AddDataDialog</class>
  <widget class="QDialog" name="AddDataDialog">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>400</width>
-    <height>300</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Dialog</string>
-  </property>
-  <widget class="QPushButton" name="VitalRecord">
-   <property name="geometry">
-    <rect>
-     <x>70</x>
-     <y>70</y>
-     <width>81</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>体征记录</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="LTRecord">
-   <property name="geometry">
-    <rect>
-     <x>70</x>
-     <y>120</y>
-     <width>81</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>临床检验记录</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="BPRecord">
-   <property name="geometry">
-    <rect>
-     <x>70</x>
-     <y>160</y>
-     <width>81</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>血压记录</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="MHRecord">
-   <property name="geometry">
-    <rect>
-     <x>70</x>
-     <y>200</y>
-     <width>81</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>病历摘要记录</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="OKbutton">
-   <property name="geometry">
-    <rect>
-     <x>250</x>
-     <y>260</y>
-     <width>91</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>OK!录入完成</string>
-   </property>
-  </widget>
+  <property name="geometry"><rect><x>0</x><y>0</y><width>420</width><height>320</height></rect></property>
+  <property name="windowTitle"><string>新增数据</string></property>
+  <property name="minimumSize"><size><width>380</width><height>280</height></size></property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QLabel" name="titleLabel">
+     <property name="text"><string>请选择要录入的数据类型：</string></property>
+     <property name="styleSheet"><string>font-size:14px; font-weight:bold; color:#333; padding:8px 0;</string></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QGridLayout" name="buttonGrid">
+     <property name="spacing"><number>12</number></property>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="VitalRecord"><property name="text"><string>🫀 体征记录</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>心率、步数、睡眠、体重、身高、腰围</string></property></widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="LTRecord"><property name="text"><string>🧪 临床检验</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>空腹血糖、血脂四项、血尿酸</string></property></widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="BPRecord"><property name="text"><string>💓 血压记录</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>收缩压、舒张压</string></property></widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="MHRecord"><property name="text"><string>📝 病历摘要</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>既往病史、手术史、过敏史、家族史、用药史</string></property></widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <spacer name="vertSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint"><size><width>20</width><height>10</height></size></property></spacer>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="bottomLayout">
+     <item><spacer name="horizSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item><widget class="QPushButton" name="OKbutton"><property name="text"><string>✅ 录入完成</string></property><property name="minimumSize"><size><width>120</width><height>36</height></size></property></widget></item>
+     <item><spacer name="horizSpacer2"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>40</width><height>20</height></size></property></spacer></item>
+    </layout>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>
