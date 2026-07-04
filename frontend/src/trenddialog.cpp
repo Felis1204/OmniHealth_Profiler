@@ -201,29 +201,6 @@ void TrendDialog::drawCurrentMetric()
     chart->addAxis(axisY, Qt::AlignLeft);
     series->attachAxis(axisY);
 
-    // ---- 线性回归趋势线 ----
-    if (metric.count >= 2 && !metric.dataPoints.empty()) {
-        auto *trendSeries = new QLineSeries();
-        trendSeries->setName("趋势线");
-        QPen trendPen(QColor("#e65100"), 2, Qt::DashLine);
-        trendSeries->setPen(trendPen);
-        trendSeries->setPointsVisible(false);
-
-        // 回归线: y = avg + slope * (i - midIndex)
-        double midIndex = (metric.count - 1) / 2.0;
-        for (size_t i = 0; i < metric.dataPoints.size(); ++i) {
-            double predictedY = metric.average + metric.slope * (i - midIndex);
-            QDateTime dt = QDateTime::fromString(
-                QString::fromStdString(metric.dataPoints[i].timestamp), Qt::ISODate);
-            if (dt.isValid()) {
-                trendSeries->append(dt.toMSecsSinceEpoch(), predictedY);
-            }
-        }
-        chart->addSeries(trendSeries);
-        trendSeries->attachAxis(axisX);
-        trendSeries->attachAxis(axisY);
-    }
-
     // 显示图表
     chart->setMargins(QMargins(8, 12, 12, 12));
     chart->setPlotAreaBackgroundVisible(true);

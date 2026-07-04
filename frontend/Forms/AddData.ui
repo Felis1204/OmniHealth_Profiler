@@ -16,7 +16,7 @@
     <layout class="QGridLayout" name="buttonGrid">
      <property name="spacing"><number>12</number></property>
      <item row="0" column="0">
-      <widget class="QPushButton" name="VitalRecord"><property name="text"><string>🫀 体征记录</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>心率、步数、睡眠、体重、身高、腰围</string></property></widget>
+      <widget class="QPushButton" name="VitalRecord"><property name="text"><string>❤️ 体征记录</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>心率、步数、睡眠、体重、身高、腰围</string></property></widget>
      </item>
      <item row="0" column="1">
       <widget class="QPushButton" name="LTRecord"><property name="text"><string>🧪 临床检验</string></property><property name="minimumSize"><size><width>160</width><height>50</height></size></property><property name="toolTip"><string>空腹血糖、血脂四项、血尿酸</string></property></widget>
