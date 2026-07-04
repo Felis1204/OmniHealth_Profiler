@@ -73,12 +73,26 @@ set(FRONTEND_FORMS
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms/vitalredialog.ui
 )
 
-# 编译为可执行文件
-add_executable(Health_Manager_App
-    ${FRONTEND_SOURCES}
-    ${FRONTEND_HEADERS}
-    ${FRONTEND_FORMS}
-)
+# 编译为可执行文件 (macOS Bundle / Windows exe)
+if(APPLE)
+    add_executable(Health_Manager_App MACOSX_BUNDLE
+        ${FRONTEND_SOURCES}
+        ${FRONTEND_HEADERS}
+        ${FRONTEND_FORMS}
+    )
+    set_target_properties(Health_Manager_App PROPERTIES
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.omnihealth.profiler"
+        MACOSX_BUNDLE_BUNDLE_NAME "OmniHealth Profiler"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+    )
+else()
+    add_executable(Health_Manager_App
+        ${FRONTEND_SOURCES}
+        ${FRONTEND_HEADERS}
+        ${FRONTEND_FORMS}
+    )
+endif()
 
 # 添加头文件搜索路径
 target_include_directories(Health_Manager_App PRIVATE

@@ -34,6 +34,37 @@ endif()
 add_subdirectory(backend)
 add_subdirectory(frontend)
 
+# ---- 安装规则 ----
+if(APPLE)
+    install(TARGETS Health_Manager_App BUNDLE DESTINATION . COMPONENT Runtime)
+else()
+    install(TARGETS Health_Manager_App RUNTIME DESTINATION . COMPONENT Runtime)
+endif()
+
+# ---- 部署目标 (deploy) ----
+# 将 Qt 运行时依赖自动复制到可执行文件旁边/内部
+if(APPLE)
+    get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_DIR "${QMAKE_EXE}" DIRECTORY)
+    find_program(MACDEPLOYQT macdeployqt HINTS "${QT_BIN_DIR}" REQUIRED)
+    add_custom_target(deploy
+        COMMAND ${MACDEPLOYQT} "$<TARGET_BUNDLE_DIR:Health_Manager_App>"
+            -verbose=1 -always-overwrite -codesign=-
+        COMMENT "Running macdeployqt to bundle Qt frameworks..."
+        DEPENDS Health_Manager_App
+    )
+elseif(WIN32)
+    get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_DIR "${QMAKE_EXE}" DIRECTORY)
+    find_program(WINDEPLOYQT windeployqt HINTS "${QT_BIN_DIR}" REQUIRED)
+    add_custom_target(deploy
+        COMMAND ${WINDEPLOYQT} "$<TARGET_FILE:Health_Manager_App>"
+            --verbose 2 --no-translations
+        COMMENT "Running windeployqt to copy Qt DLLs..."
+        DEPENDS Health_Manager_App
+    )
+endif()
+
 # ---- 测试（默认关闭）----
 option(BUILD_TESTING "Build the test suite" OFF)
 if(BUILD_TESTING)

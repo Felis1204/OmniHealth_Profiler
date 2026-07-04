@@ -88,3 +88,4 @@ third_party/_fetch/
 # ---- Core dumps ----
 core
 core.*
+omnihealth.db-*
