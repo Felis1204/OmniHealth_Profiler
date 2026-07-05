@@ -6,6 +6,8 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QMessageBox>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 AISettingsDialog::AISettingsDialog(health::HealthManager* mgr,
                                    QWidget* parent)
@@ -182,11 +184,17 @@ void AISettingsDialog::onTestClicked()
 
     if (report.find("\"error\"") != std::string::npos &&
         report.find("\"error\":") != std::string::npos) {
-        QMessageBox::warning(this, "测试失败",
-            "AI API 调用失败。\n请检查 Endpoint 和 API Key，确保网络畅通。");
+        // 提取错误详情
+        QString errMsg = "AI API 调用失败。\n";
+        auto errJson = QJsonDocument::fromJson(QString::fromStdString(report).toUtf8());
+        if (errJson.isObject() && errJson.object().contains("error")) {
+            errMsg += "错误: " + errJson.object()["error"].toString();
+        }
+        QMessageBox::warning(this, "测试失败", errMsg);
     } else {
         QMessageBox::information(this, "测试通过",
-            "AI 连接正常！可以正常使用 AI 报告功能。");
+            "✅ AI 连接正常！可以正常使用 AI 报告功能。\n\n"
+            "提示：如果后续 AI 报告仍出现问题，请检查网络或 API 配额。");
     }
     updateStatusLabel();
 }

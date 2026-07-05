@@ -380,13 +380,13 @@ static std::string formatPeriodLabel(
 // ============================================================
 class HealthManagerImpl : public HealthManager {
 public:
-    HealthManagerImpl()
+    HealthManagerImpl(const std::string& dbPath = "omnihealth.db")
         : dataAccess_(createDataAccess()),
           llmService_(createLLMService())
     {
-        std::cerr << "[Backend] HealthManagerImpl 初始化开始" << std::endl;
+        std::cerr << "[Backend] HealthManagerImpl 初始化开始 dbPath=" << dbPath << std::endl;
 
-        if (!dataAccess_->initialize("omnihealth.db")) {
+        if (!dataAccess_->initialize(dbPath)) {
             std::cerr << "[Backend] 警告: 数据库初始化失败，部分功能不可用" << std::endl;
         }
 
@@ -1455,12 +1455,9 @@ std::string HealthManagerImpl::generateAIReport(ReportPeriod period) {
 
     if (isError) {
         lastHealthContext_.clear();  // 失败时清除上下文
-        std::cerr << "[Backend] AI 请求失败，降级为本地" << periodLabel << std::endl;
-        std::ostringstream fallback;
-        fallback << "⚠️ AI 服务暂不可用\n\n"
-                 << "以下为本地生成的" << periodLabel << ":\n\n"
-                 << generateHealthReport(period);
-        return fallback.str();
+        std::cerr << "[Backend] AI 请求失败: " << aiResponse << std::endl;
+        // 返回原始错误 JSON（以 { 开头），让前端能准确判断问题
+        return aiResponse;
     }
 
     std::cerr << "[Backend] AI " << periodLabel << " 生成成功"
@@ -1528,6 +1525,6 @@ bool HealthManagerImpl::isLLMConfigured() const {
 // ============================================================
 // 工厂函数
 // ============================================================
-std::unique_ptr<health::HealthManager> health::createHealthManager() {
-    return std::make_unique<health::HealthManagerImpl>();
+std::unique_ptr<health::HealthManager> health::createHealthManager(const std::string& dbPath) {
+    return std::make_unique<health::HealthManagerImpl>(dbPath);
 }

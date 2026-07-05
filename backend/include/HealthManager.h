@@ -240,6 +240,7 @@ public:
 };
 
 /// @brief 工厂函数 —— 创建 HealthManager 实例
-std::unique_ptr<HealthManager> createHealthManager();
+/// @param dbPath 数据库文件路径（默认当前目录的 omnihealth.db）
+std::unique_ptr<HealthManager> createHealthManager(const std::string& dbPath = "omnihealth.db");
 
 } // namespace health

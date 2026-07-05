@@ -155,13 +155,27 @@ void AIReportDialog::onGenerateClicked()
             setInputEnabled(false);
             appendMessage("本地报告", QString::fromStdString(report));
         } else if (isError) {
-            statusLabel_->setText("⚠️ AI 服务暂不可用，已降级为本地报告");
-            statusLabel_->setStyleSheet(
-                "color: #e67e00; font-weight: bold; padding: 2px 8px;");
-            hasReportContext_ = false;
-            setInputEnabled(false);
-            appendMessage("系统", "❌ AI 服务返回错误，请检查 API 配置或稍后重试。\n\n"
-                                "原始响应:\n" + QString::fromStdString(report));
+        // 尝试从 JSON 中提取 error 消息
+        QString errorMsg = QString::fromStdString(report);
+        QJsonDocument errDoc = QJsonDocument::fromJson(errorMsg.toUtf8());
+        QString cleanError = errorMsg;
+        if (errDoc.isObject() && errDoc.object().contains("error")) {
+            cleanError = errDoc.object()["error"].toString();
+        }
+
+        statusLabel_->setText("⚠️ AI 服务返回错误");
+        statusLabel_->setStyleSheet(
+            "color: #e65100; font-weight: bold; padding: 2px 8px;");
+        hasReportContext_ = false;
+        setInputEnabled(false);
+        appendMessage("系统",
+            "❌ AI API 调用失败。\n\n"
+            "错误详情：<b style='color:#c62828;'>" + cleanError.toHtmlEscaped() + "</b>\n\n"
+            "请检查：\n"
+            "1. API Endpoint 是否正确（如 https://api.deepseek.com/chat/completions）\n"
+            "2. API Key 是否有效\n"
+            "3. 网络连接是否正常\n"
+            "4. 如果使用代理，请确保代理配置正确");
         } else {
             statusLabel_->setText("⚠️ 报告格式异常，请重试");
             statusLabel_->setStyleSheet(

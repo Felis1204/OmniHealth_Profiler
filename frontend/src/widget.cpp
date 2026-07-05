@@ -10,10 +10,15 @@
 #include "AISettingsDialog.h"
 #include "AIReportDialog.h"
 
+#include <QCoreApplication>
+#include <QDir>
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::Widget)
-    , manager_(health::createHealthManager())
+    , manager_(health::createHealthManager(
+          QDir(QCoreApplication::applicationDirPath())
+              .filePath("omnihealth.db").toStdString()))
 {
     ui->setupUi(this);
 

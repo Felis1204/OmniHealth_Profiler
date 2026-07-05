@@ -57,10 +57,21 @@ elseif(WIN32)
     get_target_property(QMAKE_EXE Qt6::qmake IMPORTED_LOCATION)
     get_filename_component(QT_BIN_DIR "${QMAKE_EXE}" DIRECTORY)
     find_program(WINDEPLOYQT windeployqt HINTS "${QT_BIN_DIR}" REQUIRED)
+    # 获取 SQLite3 DLL 路径（如果存在）
+    if(TARGET SQLite3::SQLite3)
+        set(SQLITE3_DLL "$<TARGET_FILE:SQLite3::SQLite3>")
+    else()
+        # 对 IMPORTED 目标，用 SQLite3_LIBRARY 变量
+        set(SQLITE3_DLL "${SQLite3_LIBRARY}")
+    endif()
+
     add_custom_target(deploy
         COMMAND ${WINDEPLOYQT} "$<TARGET_FILE:Health_Manager_App>"
             --verbose 2 --no-translations
-        COMMENT "Running windeployqt to copy Qt DLLs..."
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${SQLITE3_DLL}"
+            "$<TARGET_FILE_DIR:Health_Manager_App>/"
+        COMMENT "Running windeployqt to copy Qt DLLs, then copying SQLite3..."
         DEPENDS Health_Manager_App
     )
 endif()

@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QTranslator>
 #include <QLibraryInfo>
+#include <QDir>
 #include <iostream>
 #include <string>
 #include "widget.h"
@@ -44,7 +45,9 @@ int main(int argc, char *argv[])
 
     // 如果指定 --seed，先生成样例数据
     if (doSeed) {
-        auto seedMgr = health::createHealthManager();
+        auto seedMgr = health::createHealthManager(
+            QDir(QCoreApplication::applicationDirPath())
+                .filePath("omnihealth.db").toStdString());
         int n = seedSampleData(seedMgr.get());
         std::cout << "\n样例数据已生成（" << n << " 条记录），启动 GUI...\n" << std::endl;
     }

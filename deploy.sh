@@ -17,8 +17,24 @@ echo "=== 2/4 捆绑 Qt 框架 (macdeployqt) ==="
 cmake --build "$BUILD_DIR" --target deploy
 
 APP="$BUILD_DIR/frontend/Health_Manager_App.app"
+
 echo ""
-echo "=== 3/4 验证 .app ==="
+echo "=== 3/4 捆绑 SQLite3 动态库 ==="
+# Homebrew 安装的 SQLite3 在 /opt/homebrew/lib 或 /usr/local/lib
+for SQLITE_LIB in /opt/homebrew/lib/libsqlite3*.dylib /usr/local/lib/libsqlite3*.dylib; do
+    if [ -f "$SQLITE_LIB" ]; then
+        cp -f "$SQLITE_LIB" "$APP/Contents/Frameworks/"
+        # 修复 install_name 使 .app 能内部查找
+        install_name_tool -change "$SQLITE_LIB" \
+            "@executable_path/../Frameworks/$(basename "$SQLITE_LIB")" \
+            "$APP/Contents/MacOS/Health_Manager_App" 2>/dev/null || true
+        echo "  ✅ 已捆绑 $(basename "$SQLITE_LIB")"
+        break
+    fi
+done
+
+echo ""
+echo "=== 4/5 验证 .app ==="
 if [ -d "$APP" ]; then
     SIZE=$(du -sh "$APP" | cut -f1)
     echo "  ✅ $APP ($SIZE)"
@@ -28,7 +44,7 @@ else
 fi
 
 echo ""
-echo "=== 4/4 创建 DMG ==="
+echo "=== 5/5 创建 DMG ==="
 VERSION="0.2.0"
 DMG_NAME="OmniHealth_Profiler-${VERSION}-macOS.dmg"
 DMG_PATH="$BUILD_DIR/$DMG_NAME"

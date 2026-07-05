@@ -7,11 +7,17 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 
 #include <nlohmann/json.hpp>
 #include <httplib.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#include <winhttp.h>
+#endif
 
 using json = nlohmann::json;
 
@@ -145,19 +151,146 @@ bool LLMServiceImpl::isConfigured() const {
 }
 
 // ============================================================
+// WinHTTP 实现（Windows 原生 HTTPS，不依赖 cpp-httplib SSL 支持）
+// ============================================================
+#ifdef _WIN32
+static std::string winHttpPost(const std::string& host,
+                                const std::string& path,
+                                const std::string& body,
+                                const std::string& apiKey) {
+    // 初始化 WinHTTP 会话
+    HINTERNET hSession = WinHttpOpen(L"OmniHealth/1.0",
+        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+        NULL, NULL, 0);
+    if (!hSession) {
+        return R"({"error": "WinHTTP 会话创建失败"})";
+    }
+
+    // 转换 host 到宽字符
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, host.c_str(), -1, NULL, 0);
+    std::wstring whost(wlen, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, host.c_str(), -1, &whost[0], wlen);
+
+    // 连接服务器
+    HINTERNET hConnect = WinHttpConnect(hSession, whost.c_str(),
+        INTERNET_DEFAULT_HTTPS_PORT, 0);
+    if (!hConnect) {
+        WinHttpCloseHandle(hSession);
+        return R"({"error": "WinHTTP 连接服务器失败"})";
+    }
+
+    // 转换 path 到宽字符
+    wlen = MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, NULL, 0);
+    std::wstring wpath(wlen, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, &wpath[0], wlen);
+
+    // 转换 body 到宽字符（用于 Content-Length 计算）
+    std::wstring wverb = L"POST";
+
+    // 打开请求
+    HINTERNET hRequest = WinHttpOpenRequest(hConnect, wverb.c_str(),
+        wpath.c_str(), NULL, NULL, NULL,
+        WINHTTP_FLAG_SECURE | WINHTTP_FLAG_REFRESH);
+    if (!hRequest) {
+        WinHttpCloseHandle(hConnect);
+        WinHttpCloseHandle(hSession);
+        return R"({"error": "WinHTTP 创建请求失败"})";
+    }
+
+    // 设置超时
+    WinHttpSetTimeouts(hRequest, 10000, 30000, 30000, 60000);
+
+    // 设置请求头
+    std::string headers = "Content-Type: application/json\r\n"
+                          "Authorization: Bearer " + apiKey + "\r\n";
+    int hlen = MultiByteToWideChar(CP_UTF8, 0, headers.c_str(), -1, NULL, 0);
+    std::wstring wheaders(hlen, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, headers.c_str(), -1, &wheaders[0], hlen);
+
+    if (!WinHttpSendRequest(hRequest, wheaders.c_str(), -1,
+            (LPVOID)body.data(), body.size(),
+            body.size(), 0)) {
+        WinHttpCloseHandle(hRequest);
+        WinHttpCloseHandle(hConnect);
+        WinHttpCloseHandle(hSession);
+        DWORD err = GetLastError();
+        return "{\"error\": \"WinHTTP 发送请求失败 (错误码: "
+               + std::to_string(err) + ")\"}";
+    }
+
+    if (!WinHttpReceiveResponse(hRequest, NULL)) {
+        WinHttpCloseHandle(hRequest);
+        WinHttpCloseHandle(hConnect);
+        WinHttpCloseHandle(hSession);
+        return R"({"error": "WinHTTP 接收响应失败"})";
+    }
+
+    // 读取响应
+    std::string response;
+    DWORD bytesRead = 0;
+    char buffer[4096];
+    while (WinHttpReadData(hRequest, buffer, sizeof(buffer), &bytesRead) &&
+           bytesRead > 0) {
+        response.append(buffer, bytesRead);
+    }
+
+    // 获取 HTTP 状态码
+    DWORD statusCode = 0;
+    DWORD statusSize = sizeof(statusCode);
+    WinHttpQueryHeaders(hRequest,
+        WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+        NULL, &statusCode, &statusSize, NULL);
+
+    WinHttpCloseHandle(hRequest);
+    WinHttpCloseHandle(hConnect);
+    WinHttpCloseHandle(hSession);
+
+    // 处理非 200 状态码
+    if (statusCode != 200) {
+        std::cerr << "[LLMService] WinHTTP API 返回 HTTP "
+                  << statusCode << ": " << response << std::endl;
+        if (statusCode == 401) {
+            return R"({"error": "API Key 无效，请检查密钥配置。"})";
+        } else if (statusCode == 429) {
+            return R"({"error": "API 请求过于频繁，请稍后重试。"})";
+        } else if (statusCode >= 500) {
+            return R"({"error": "AI 服务暂时不可用，请稍后重试。"})";
+        }
+        return "{\"error\": \"AI 服务异常 (HTTP "
+               + std::to_string(statusCode) + ")\"}";
+    }
+
+    // 解析 OpenAI 格式响应
+    try {
+        json respJson = json::parse(response);
+        if (respJson.contains("choices") && !respJson["choices"].empty()) {
+            return respJson["choices"][0]["message"]["content"];
+        }
+        std::cerr << "[LLMService] 无法解析 API 响应: " << response << std::endl;
+        return R"({"error": "AI 返回格式异常，请重试。"})";
+    } catch (const json::parse_error& e) {
+        std::cerr << "[LLMService] JSON 解析失败: " << e.what() << std::endl;
+        return R"({"error": "AI 返回格式异常，JSON 解析失败。"})";
+    }
+}
+#endif // _WIN32
+
+// ============================================================
 // sendRequest — HTTP POST to OpenAI-compatible API
 // ============================================================
 std::string LLMServiceImpl::sendRequest(const std::string& systemPrompt,
                                          const std::string& userMessage) {
-    // 解析 endpoint URL → host + path
+    // 解析 endpoint URL → scheme + host + path
+    std::string scheme = "https";
     std::string host;
     std::string path = "/";
 
     std::string url = endpoint_;
-    // 去掉 https:// 前缀
     if (url.rfind("https://", 0) == 0) {
+        scheme = "https";
         url = url.substr(8);
     } else if (url.rfind("http://", 0) == 0) {
+        scheme = "http";
         url = url.substr(7);
     }
 
@@ -169,12 +302,9 @@ std::string LLMServiceImpl::sendRequest(const std::string& systemPrompt,
         host = url;
     }
 
-    // 创建 HTTPS 客户端
-    httplib::Client cli(host);
-    cli.set_follow_location(true);    // 跟随 HTTP 重定向
-    cli.set_connection_timeout(10);   // 连接超时 10s
-    cli.set_read_timeout(60);         // 读取超时 60s（AI 推理可能需要时间）
-    cli.set_write_timeout(30);
+    if (host.empty()) {
+        return R"({"error": "Endpoint 地址无效，请检查配置。"})";
+    }
 
     // 组装请求体
     json requestBody;
@@ -196,57 +326,86 @@ std::string LLMServiceImpl::sendRequest(const std::string& systemPrompt,
 
     std::string bodyStr = requestBody.dump();
 
-    // 设置请求头
-    httplib::Headers headers = {
-        {"Content-Type", "application/json"},
-        {"Authorization", "Bearer " + apiKey_}
-    };
-
-    // 发送 POST
-    auto res = cli.Post(path, headers, bodyStr, "application/json");
-
-    if (!res) {
-        std::cerr << "[LLMService] HTTP 请求失败: "
-                  << httplib::to_string(res.error()) << std::endl;
-#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
-        auto err = cli.get_openssl_verify_result();
-        if (err != 0) {
-            std::cerr << "[LLMService] SSL 验证错误码: " << err << std::endl;
+#ifdef _WIN32
+    // Windows: 直接用 WinHTTP API（不依赖 cpp-httplib 的 SSL 支持）
+    if (scheme != "https") {
+        // 纯 HTTP（测试用）
+        httplib::Client cli(host);
+        cli.set_follow_location(true);
+        cli.set_connection_timeout(10);
+        cli.set_read_timeout(60);
+        httplib::Headers hdrs = {
+            {"Content-Type", "application/json"},
+            {"Authorization", "Bearer " + apiKey_}
+        };
+        auto res = cli.Post(path, hdrs, bodyStr, "application/json");
+        if (!res) {
+            return "{\"error\": \"HTTP 请求失败: "
+                   + httplib::to_string(res.error()) + "\"}";
         }
-#endif
-        return R"({"error": "网络请求失败，无法连接 AI 服务。请检查网络连接。"})";
+        try {
+            json respJson = json::parse(res->body);
+            if (respJson.contains("choices") && !respJson["choices"].empty())
+                return respJson["choices"][0]["message"]["content"];
+        } catch (...) {}
+        return R"({"error": "HTTP 返回格式异常"})";
     }
-
-    int status = res->status;
-    std::string respBody = res->body;
-
-    if (status != 200) {
-        std::cerr << "[LLMService] API 返回错误 HTTP " << status
-                  << ": " << respBody << std::endl;
-
-        if (status == 401) {
-            return R"({"error": "API Key 无效，请检查密钥配置。"})";
-        } else if (status == 429) {
-            return R"({"error": "API 请求过于频繁，请稍后重试。"})";
-        } else if (status >= 500) {
-            return R"({"error": "AI 服务暂时不可用，请稍后重试。"})";
-        }
-        return "{\"error\": \"AI 服务异常 (HTTP " + std::to_string(status) + ")\"}";
-    }
-
-    // 解析 OpenAI 格式响应
+    // HTTPS: 用 WinHTTP 直接发请求
+    return winHttpPost(host, path, bodyStr, apiKey_);
+#else
+    // macOS / Linux: 用 cpp-httplib
     try {
-        json respJson = json::parse(respBody);
-        if (respJson.contains("choices") && !respJson["choices"].empty()) {
-            std::string content = respJson["choices"][0]["message"]["content"];
-            return content;
+        std::unique_ptr<httplib::Client> cli;
+        if (scheme == "https") {
+#ifdef CPPHTTPLIB_OPENSSL_SUPPORT
+            cli = std::make_unique<httplib::SSLClient>(host);
+#else
+            cli = std::make_unique<httplib::Client>("https://" + host);
+#endif
+        } else {
+            cli = std::make_unique<httplib::Client>(host);
         }
-        std::cerr << "[LLMService] 无法解析 API 响应: " << respBody << std::endl;
-        return R"({"error": "AI 返回格式异常，请重试。"})";
-    } catch (const json::parse_error& e) {
-        std::cerr << "[LLMService] JSON 解析失败: " << e.what() << std::endl;
-        return R"({"error": "AI 返回格式异常，JSON 解析失败。"})";
+
+        cli->set_follow_location(true);
+        cli->set_connection_timeout(10);
+        cli->set_read_timeout(60);
+        cli->set_write_timeout(30);
+
+        httplib::Headers hdrs = {
+            {"Content-Type", "application/json"},
+            {"Authorization", "Bearer " + apiKey_}
+        };
+
+        auto res = cli->Post(path, hdrs, bodyStr, "application/json");
+        if (!res) {
+            auto errDetail = httplib::to_string(res.error());
+            std::cerr << "[LLMService] HTTP 请求失败: " << errDetail << std::endl;
+            return "{\"error\": \"网络请求失败（" + errDetail + "）\"}";
+        }
+
+        if (res->status != 200) {
+            if (res->status == 401)
+                return R"({"error": "API Key 无效，请检查密钥配置。"})";
+            else if (res->status == 429)
+                return R"({"error": "API 请求过于频繁，请稍后重试。"})";
+            return "{\"error\": \"AI 服务异常 (HTTP "
+                   + std::to_string(res->status) + ")\"}";
+        }
+
+        try {
+            json respJson = json::parse(res->body);
+            if (respJson.contains("choices") && !respJson["choices"].empty())
+                return respJson["choices"][0]["message"]["content"];
+        } catch (const json::parse_error& e) {
+            std::cerr << "[LLMService] JSON 解析失败: " << e.what() << std::endl;
+        }
+        return R"({"error": "AI 返回格式异常。"})";
+
+    } catch (const std::exception& e) {
+        std::cerr << "[LLMService] 客户端异常: " << e.what() << std::endl;
+        return "{\"error\": \"网络客户端异常: " + std::string(e.what()) + "\"}";
     }
+#endif
 }
 
 // ============================================================

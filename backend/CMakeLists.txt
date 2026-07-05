@@ -20,11 +20,13 @@ FetchContent_MakeAvailable(json)
 
 # cpp-httplib (Header-only HTTP/HTTPS 库，用于 LLM API 调用)
 # SSL: macOS 用 Security framework / Windows 用 WinHTTP / Linux 需 OpenSSL
+# MinGW: 需要手动配置 WinHTTP 支持（#pragma comment 在 MinGW 无效）
 FetchContent_Declare(
     httplib
     GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
     GIT_TAG v0.18.3
 )
+
 FetchContent_MakeAvailable(httplib)
 
 # SQLite3 —— 跨平台查找策略
@@ -107,6 +109,11 @@ if(APPLE)
         "-framework Security"
         "-framework CoreFoundation"
     )
+endif()
+
+# Windows: LLMService 在 Windows 上直接用 WinHTTP API 发 HTTPS 请求
+if(WIN32)
+    target_link_libraries(health_backend PUBLIC winhttp crypt32)
 endif()
 
 # 要求 C++17
